@@ -1,0 +1,15 @@
+export const colors = {
+  ink: '#202331',
+  navy: '#171d2d',
+  muted: '#77766f',
+  cream: '#faf8f3',
+  surface: '#ffffff',
+  border: '#e9e5dc',
+  gold: '#efc66c',
+  goldLight: '#ffe2a0',
+  goldDeep: '#b78128',
+  olive: '#65764c',
+  success: '#3e8054',
+  danger: '#a83e30',
+  info: '#356a91',
+} as const
