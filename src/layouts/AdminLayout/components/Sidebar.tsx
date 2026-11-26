@@ -4,17 +4,16 @@ import type { UserRole } from '../../../types/auth.types'
 import { dashboardPath, routes } from '../../../app/router/routes'
 import { Users } from 'lucide-react'
 
-export function Sidebar({ userRole, permissions, open = false, onNavigate }: { userRole: UserRole; permissions: string[]; open?: boolean; onNavigate?: () => void }) {
+export function Sidebar({ userRole, permissions }: { userRole: UserRole; permissions: string[] }) {
     const can = (permission: string) =>
         userRole === 'admin' || permissions.includes(permission)
     const hasAny = (items: string[]) => userRole === 'admin' || items.some(can)
 
     return (
-        <aside className={`dashboard-sidebar${open ? ' sidebar-open' : ''}`}>
+        <aside className="dashboard-sidebar">
             <Logo />
             <div className="sidebar-label">WORKSPACE</div>
             <NavLink
-                onClick={onNavigate}
                 className={({ isActive }) => `side-link${isActive ? ' side-link-active' : ''}`}
                 to={dashboardPath(userRole)}
             >

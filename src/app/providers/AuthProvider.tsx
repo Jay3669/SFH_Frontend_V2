@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { SessionExpiredDialog } from '../../components/dialogs/SessionExpiredDialog'
+import { appConfig } from '../../config/app.config'
 import {
   accessTokenKey,
   accessTokenTypeKey,
@@ -10,6 +11,7 @@ import {
 } from '../../services/auth/authService'
 import {
   accessTokenRefreshedEvent,
+  ApiError,
   apiRequest,
   handleAccessTokenExpiration,
   sessionExpiredEvent,
@@ -26,7 +28,7 @@ import {
   removeSessionValue,
   writeSessionValue,
 } from '../../services/storage/sessionStorage'
-import type { AuthUser } from '../../types/auth.types'
+import { toAuthUser, type AuthUser } from '../../types/auth.types'
 import { routes } from '../router/routes'
 import { AuthContext, type AuthState } from './AuthContext'
 
@@ -38,10 +40,22 @@ type RefreshedTokenDetail = {
   sessionId?: unknown
 }
 
+function readCachedUser(): AuthUser | null {
+  if (!readSessionValue(accessTokenKey)) return null
+  const cachedUser = readSessionValue(appConfig.authUserStorageKey)
+  if (!cachedUser) return null
+
+  try {
+    return toAuthUser(JSON.parse(cachedUser))
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(readCachedUser)
   const [authState, setAuthState] = useState<AuthState>(
     () => readSessionValue(accessTokenKey) ? 'AUTHENTICATING' : 'UNAUTHENTICATED',
   )
@@ -90,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     invalidateAuthSession()
     removeSessionValue(accessTokenKey)
     removeSessionValue(accessTokenTypeKey)
+    removeSessionValue(appConfig.authUserStorageKey)
     queryClient.clear()
     setUser(null)
   }, [clearExpirationTimer, queryClient])
@@ -150,14 +165,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (active && getAuthSessionId() === sessionId &&
           authStateRef.current === 'AUTHENTICATING') {
           setUser(currentUser)
+          writeSessionValue(appConfig.authUserStorageKey, JSON.stringify(currentUser))
           transitionTo('AUTHENTICATED')
         }
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (active && getAuthSessionId() === sessionId &&
           authStateRef.current === 'AUTHENTICATING') {
-          clearAuthentication()
-          transitionTo('UNAUTHENTICATED')
+          if (error instanceof ApiError && error.status === 401) {
+            transitionTo('SESSION_EXPIRED')
+            clearExpirationTimer()
+            removeSessionValue(accessTokenKey)
+            removeSessionValue(accessTokenTypeKey)
+          } else if (readCachedUser()) {
+            transitionTo('AUTHENTICATED')
+          } else {
+            clearAuthentication()
+            transitionTo('UNAUTHENTICATED')
+          }
         }
       })
       .finally(() => {
@@ -167,7 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false
     }
-  }, [clearAuthentication, scheduleExpirationCheck, transitionTo])
+  }, [clearAuthentication, clearExpirationTimer, scheduleExpirationCheck, transitionTo])
 
   useEffect(() => () => clearExpirationTimer(), [clearExpirationTimer])
 
@@ -179,6 +204,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const sessionId = startAuthSession()
       writeSessionValue(accessTokenKey, result.accessToken)
       writeSessionValue(accessTokenTypeKey, result.tokenType)
+      writeSessionValue(appConfig.authUserStorageKey, JSON.stringify(result.user))
       setUser(result.user)
       scheduleExpirationCheck(result.accessToken, sessionId)
       transitionTo('AUTHENTICATED')
@@ -187,6 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       invalidateAuthSession()
       removeSessionValue(accessTokenKey)
       removeSessionValue(accessTokenTypeKey)
+      removeSessionValue(appConfig.authUserStorageKey)
       setUser(null)
       transitionTo('UNAUTHENTICATED')
       throw error

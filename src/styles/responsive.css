@@ -4,49 +4,18 @@
     padding-left: 18px;
   }
 
-  .mobile-menu-button,
-  .sidebar-backdrop {
-    display: none;
-  }
-
   @media (max-width: 960px) {
     .dashboard {
       grid-template-columns: minmax(0, 1fr);
     }
 
     .dashboard-sidebar {
-      position: fixed;
-      z-index: 80;
-      left: 0;
-      transform: translateX(-105%);
-      width: 252px;
-      transition: transform 220ms cubic-bezier(.2,.7,.2,1);
-    }
-
-    .dashboard-sidebar.sidebar-open {
-      transform: translateX(0);
-    }
-
-    .sidebar-backdrop {
-      position: fixed;
-      z-index: 79;
-      inset: 0;
-      display: block;
-      border: 0;
-      background: rgb(15 20 32 / 38%);
-      backdrop-filter: blur(3px);
-    }
-
-    .mobile-menu-button {
-      display: inline-flex;
-      width: 40px;
-      height: 40px;
-      margin-right: 8px;
+      display: none;
     }
 
     .dashboard-header {
       justify-content: flex-start;
-      min-height: 68px;
+      min-height: 58px;
       padding: 0 18px;
     }
 

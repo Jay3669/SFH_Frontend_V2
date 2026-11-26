@@ -447,7 +447,7 @@
 
 .dashboard-header {
     display: flex;
-    min-height: 72px;
+    min-height: 52px;
     align-items: center;
     justify-content: space-between;
     padding: 0 clamp(24px, 4vw, 48px);
@@ -1121,7 +1121,7 @@
     position: sticky;
     z-index: 20;
     top: 0;
-    height: 76px;
+    height: 58px;
     padding: 0 34px;
     backdrop-filter: blur(14px);
 }
@@ -1361,7 +1361,7 @@
     }
 
     .dashboard-header {
-        height: 68px;
+        height: 58px;
         padding: 0 18px;
     }
 
