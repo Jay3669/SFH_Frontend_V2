@@ -14,7 +14,11 @@ const refreshableAuthCodes = new Set([
 ])
 const API_REQUEST_TIMEOUT_MS = 30_000
 const API_LOADER_MIN_DURATION_MS = 3_000
-const excludedAuthPathPattern = /(?:^|\/)(?:login|forgot-password|forgotpassword|reset-password)(?:\/|$)/i
+const authRequestsWithoutLoader = new Set([
+  apiEndpoints.auth.login,
+  apiEndpoints.auth.logout,
+  apiEndpoints.auth.refresh,
+].map((path) => path.toLowerCase()))
 
 type TokenResponse = {
   data?: {
@@ -86,22 +90,6 @@ function finishApiLoading() {
   }, remainingDuration)
 }
 
-function shouldTrackApiRequest(path: string) {
-  const requestPath = path.split(/[?#]/, 1)[0].toLowerCase()
-  if (
-    requestPath === apiEndpoints.auth.login.toLowerCase() ||
-    excludedAuthPathPattern.test(requestPath)
-  ) {
-    return false
-  }
-
-  if (typeof window !== 'undefined') {
-    const pagePath = window.location.pathname.toLowerCase()
-    if (pagePath === '/' || excludedAuthPathPattern.test(pagePath)) return false
-  }
-  return true
-}
-
 export class ApiError extends Error {
   readonly status?: number
   readonly code?: string
@@ -128,8 +116,10 @@ export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const showGlobalLoader = shouldTrackApiRequest(path)
-  if (showGlobalLoader) beginApiLoading()
+  const requestPath = path.split(/[?#]/, 1)[0].toLowerCase()
+  const isLoginPage = typeof window !== 'undefined' && window.location.pathname === '/'
+  const showApiLoader = !authRequestsWithoutLoader.has(requestPath) && !isLoginPage
+  if (showApiLoader) beginApiLoading()
 
   const controller = new AbortController()
   const externalSignal = options.signal
@@ -196,7 +186,7 @@ export async function apiRequest<T>(
   } finally {
     clearTimeout(timeoutId)
     externalSignal?.removeEventListener('abort', abortFromCaller)
-    if (showGlobalLoader) finishApiLoading()
+    if (showApiLoader) finishApiLoading()
   }
 }
 

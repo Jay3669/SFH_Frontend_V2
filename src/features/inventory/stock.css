@@ -478,15 +478,6 @@
     font-size: 22px;
 }
 
-.stock-spinner {
-    width: 22px;
-    height: 22px;
-    border: 2px solid #e8e1d3;
-    border-top-color: var(--color-gold-deep);
-    border-radius: 50%;
-    animation: spin 650ms linear infinite;
-}
-
 .stock-notice,
 .stock-error {
     display: flex;

@@ -72,6 +72,30 @@ export function getStockItems({
   )
 }
 
+export async function getNextStockItemDisplayOrder() {
+  let highestDisplayOrder = 0
+
+  for (const status of ['active', 'inactive'] as const) {
+    let page = 1
+    let totalPages = 1
+    while (page <= totalPages) {
+      const response = await getStockItems({ q: '', status, page, limit: 100 })
+      if (!Array.isArray(response.data)) {
+        throw new Error('The stock item list response did not include a data list.')
+      }
+
+      highestDisplayOrder = response.data.reduce(
+        (highest, item) => Math.max(highest, item.displayOrder),
+        highestDisplayOrder,
+      )
+      totalPages = response.pagination?.totalPages ?? page
+      page += 1
+    }
+  }
+
+  return highestDisplayOrder + 1
+}
+
 export function getStockMovements(page = 1, limit = 20) {
   const query = new URLSearchParams({ page: String(page), limit: String(limit) })
   return authenticatedApiRequest<StockListResponse<StockMovement>>(

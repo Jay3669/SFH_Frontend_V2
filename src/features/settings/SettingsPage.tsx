@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { AdminLayout } from '../../layouts/AdminLayout'
+import { AutoDismissMessage } from '../../components/common/AutoDismissMessage/AutoDismissMessage'
+import { ApiLoadingIndicator } from '../../components/loaders/ApiLoadingIndicator'
 import type { AuthUser } from '../../types/auth.types'
 import { formatTimestamp } from '../../utils/dateFormatting'
 import { getApplicationSettings, updateApplicationSettings } from './settingsService'
@@ -182,10 +184,10 @@ export function SettingsPage({
           </div>
         </header>
 
-        {error && <div className="operations-alert operations-alert-error" role="alert">{error}</div>}
-        {notice && <div className="operations-alert operations-alert-success" role="status">{notice}</div>}
+        {error && <AutoDismissMessage message={error} onDismiss={() => setError('')}><div className="operations-alert operations-alert-error" role="alert">{error}</div></AutoDismissMessage>}
+        {notice && <AutoDismissMessage message={notice} onDismiss={() => setNotice('')}><div className="operations-alert operations-alert-success" role="status">{notice}</div></AutoDismissMessage>}
         {loading
-          ? <section className="settings-card"><p className="settings-muted">Loading saved settings…</p></section>
+          ? <section className="settings-card"><ApiLoadingIndicator label="Loading saved settings…" compact /></section>
           : settingsLoaded && <form className="settings-form" onSubmit={(event) => void saveSettings(event)}>
             <section className="settings-card">
               <div className="settings-card-heading">

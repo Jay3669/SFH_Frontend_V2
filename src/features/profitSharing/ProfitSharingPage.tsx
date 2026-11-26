@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { AdminLayout } from '../../layouts/AdminLayout'
+import { AutoDismissMessage } from '../../components/common/AutoDismissMessage/AutoDismissMessage'
 import type { AuthUser } from '../../types/auth.types'
 import {
   approveProfitSharing,
@@ -82,8 +83,8 @@ export function ProfitSharingPage({ user, onLogout }: { user: AuthUser; onLogout
             <p>Calculate and approve staff shares using the existing net daily profit result.</p>
           </div>
         </header>
-        {error && <div className="operations-alert operations-alert-error" role="alert">{error}</div>}
-        {notice && <div className="operations-alert operations-alert-success" role="status">{notice}</div>}
+        {error && <AutoDismissMessage message={error} onDismiss={() => setError('')}><div className="operations-alert operations-alert-error" role="alert">{error}</div></AutoDismissMessage>}
+        {notice && <AutoDismissMessage message={notice} onDismiss={() => setNotice('')}><div className="operations-alert operations-alert-success" role="status">{notice}</div></AutoDismissMessage>}
         <form className="settings-card settings-form" onSubmit={calculate}>
           <div className="settings-grid">
             <label>Business date

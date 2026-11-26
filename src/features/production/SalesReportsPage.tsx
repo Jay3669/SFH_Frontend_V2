@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
 import { Icon } from '../../components/common/Icon/Icon'
+import { AutoDismissMessage } from '../../components/common/AutoDismissMessage/AutoDismissMessage'
+import { ApiLoadingIndicator } from '../../components/loaders/ApiLoadingIndicator'
 import { AdminLayout } from '../../layouts/AdminLayout'
 import type { AuthUser } from '../../types/auth.types'
 import {
@@ -42,6 +45,7 @@ export function SalesReportsPage({
   const [expenseDescription, setExpenseDescription] = useState('')
   const [expenseAmount, setExpenseAmount] = useState('')
   const [savingExpense, setSavingExpense] = useState(false)
+  const [showExpenseDialog, setShowExpenseDialog] = useState(false)
   const [error, setError] = useState('')
   const [settingsError, setSettingsError] = useState('')
   const [regionalFormat, setRegionalFormat] = useState(DEFAULT_REGIONAL_FORMAT)
@@ -153,6 +157,7 @@ export function SalesReportsPage({
       setNotice('Operating expense recorded.')
       setExpenseDescription('')
       setExpenseAmount('')
+      setShowExpenseDialog(false)
       await reportQuery.refetch()
     } catch (saveError) {
       setError(requestError(saveError))
@@ -220,8 +225,8 @@ export function SalesReportsPage({
           <div><p className="eyebrow">BUSINESS PERFORMANCE</p><h1>Sales & Reports</h1>
             <p>Review production costs, completed sales, wastage, operating expenses and profit/loss.</p></div>
         </header>
-        {displayedError && <div className="operations-alert operations-alert-error" role="alert">{displayedError}</div>}
-        {notice && <div className="operations-alert operations-alert-success" role="status">{notice}</div>}
+        {displayedError && <AutoDismissMessage message={displayedError}><div className="operations-alert operations-alert-error" role="alert">{displayedError}</div></AutoDismissMessage>}
+        {notice && <AutoDismissMessage message={notice} onDismiss={() => setNotice('')}><div className="operations-alert operations-alert-success" role="status">{notice}</div></AutoDismissMessage>}
 
         <section className="operations-panel">
           <div className="operations-period-shortcuts" aria-label="Report period shortcuts">
@@ -249,7 +254,7 @@ export function SalesReportsPage({
           </form>
         </section>
 
-        {loading && <p className="operations-empty">Loading financial report…</p>}
+        {loading && <ApiLoadingIndicator label="Loading financial report…" compact />}
         {report && summary && <>
           <section className="operations-metrics operations-metrics-wide">
             <Metric label="Production cost" value={money(summary.totalProductionCost)} />
@@ -339,14 +344,19 @@ export function SalesReportsPage({
               </table></div>
             </section>
             <section className="operations-panel">
-              <div className="operations-panel-heading"><div><h2>Operating expenses</h2><p>Rent, electricity, wages, gas, maintenance and other costs.</p></div></div>
-              <form className="operations-form operations-expense-form" onSubmit={(event) => void addExpense(event)}>
-                <label>Date<input type="date" value={expenseDate} onChange={(event) => setExpenseDate(event.target.value)} required /></label>
-                <label>Category<input value={expenseCategory} onChange={(event) => setExpenseCategory(event.target.value)} maxLength={60} required /></label>
-                <label>Description<input value={expenseDescription} onChange={(event) => setExpenseDescription(event.target.value)} maxLength={255} required /></label>
-                <label>Amount (₹)<input type="number" min="0.01" step="0.01" value={expenseAmount} onChange={(event) => setExpenseAmount(event.target.value)} required /></label>
-                <button className="sfh-button" disabled={savingExpense}>{savingExpense ? 'Saving…' : 'Record expense'}</button>
-              </form>
+              <div className="operations-panel-heading">
+                <div><h2>Operating expenses</h2><p>Rent, electricity, wages, gas, maintenance and other costs.</p></div>
+                <button
+                  type="button"
+                  className="sfh-button"
+                  onClick={() => {
+                    setError('')
+                    setShowExpenseDialog(true)
+                  }}
+                >
+                  Add expense
+                </button>
+              </div>
               <div className="operations-expense-list">{report.expenses.map((expense) => <div key={expense.id}>
                 <span><strong>{expense.category}</strong><small>{formatDateOnly(expense.expenseDate, regionalFormat)} · {expense.description}</small></span><b>{money(Number(expense.amount))}</b>
               </div>)}
@@ -356,6 +366,31 @@ export function SalesReportsPage({
           </div>
         </>}
       </main>
+      <Dialog
+        open={showExpenseDialog}
+        fullWidth
+        maxWidth="sm"
+        className="sfh-form-dialog"
+        onClose={() => setShowExpenseDialog(false)}
+        aria-labelledby="operating-expense-dialog-title"
+      >
+        <DialogTitle id="operating-expense-dialog-title">Record operating expense</DialogTitle>
+        <DialogContent dividers>
+          {error && <AutoDismissMessage message={error} onDismiss={() => setError('')}><div className="operations-alert operations-alert-error" role="alert">{error}</div></AutoDismissMessage>}
+          <form id="operating-expense-form" className="operations-form operations-expense-form sfh-dialog-form" onSubmit={(event) => void addExpense(event)}>
+            <label>Date<input type="date" value={expenseDate} onChange={(event) => setExpenseDate(event.target.value)} required /></label>
+            <label>Category<input value={expenseCategory} onChange={(event) => setExpenseCategory(event.target.value)} maxLength={60} required /></label>
+            <label>Description<input value={expenseDescription} onChange={(event) => setExpenseDescription(event.target.value)} maxLength={255} required /></label>
+            <label>Amount (₹)<input type="number" min="0.01" step="0.01" value={expenseAmount} onChange={(event) => setExpenseAmount(event.target.value)} required /></label>
+          </form>
+        </DialogContent>
+        <DialogActions>
+          <button type="button" className="sfh-button sfh-button-secondary" onClick={() => setShowExpenseDialog(false)}>Cancel</button>
+          <button type="submit" form="operating-expense-form" className="sfh-button" disabled={savingExpense}>
+            {savingExpense ? 'Saving…' : 'Record expense'}
+          </button>
+        </DialogActions>
+      </Dialog>
     </AdminLayout>
   )
 }

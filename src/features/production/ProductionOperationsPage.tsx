@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Icon } from '../../components/common/Icon/Icon'
+import { AutoDismissMessage } from '../../components/common/AutoDismissMessage/AutoDismissMessage'
+import { ApiLoadingIndicator } from '../../components/loaders/ApiLoadingIndicator'
 import { AdminLayout } from '../../layouts/AdminLayout'
 import type { AuthUser } from '../../types/auth.types'
 import { capitalizeFirstLetter } from '../../utils/capitalizeFirstLetter'
@@ -75,8 +77,8 @@ function PageFrame({
 function Alert({ error, notice }: { error: string; notice: string }) {
   return (
     <>
-      {error && <div className="operations-alert operations-alert-error" role="alert">{error}</div>}
-      {notice && <div className="operations-alert operations-alert-success" role="status">{notice}</div>}
+      {error && <AutoDismissMessage message={error}><div className="operations-alert operations-alert-error" role="alert">{error}</div></AutoDismissMessage>}
+      {notice && <AutoDismissMessage message={notice}><div className="operations-alert operations-alert-success" role="status">{notice}</div></AutoDismissMessage>}
     </>
   )
 }
@@ -411,7 +413,7 @@ export function DailyProductionPage({
               </article>
             ))}
             {!loading && availability?.items.length === 0 && <p className="operations-empty">No production has been confirmed for this date.</p>}
-            {loading && <p className="operations-empty">Loading production…</p>}
+            {loading && <ApiLoadingIndicator label="Loading production…" compact />}
           </div>
         </section>
       </div>
@@ -442,7 +444,7 @@ export function DailyProductionPage({
       {selectedRecord && <div className="production-modal-backdrop" role="presentation" onMouseDown={(event) => {
         if (event.target === event.currentTarget) setSelectedRecord(null)
       }}>
-        <section className="production-modal" role="dialog" aria-modal="true" aria-labelledby="production-detail-title">
+        <section className="production-modal sfh-form-dialog" role="dialog" aria-modal="true" aria-labelledby="production-detail-title">
           <div className="production-modal-heading">
             <div><p className="eyebrow">{selectedRecord.reference}</p><h2 id="production-detail-title">{selectedRecord.menuItem?.name || 'Production details'}</h2></div>
             <button type="button" className="production-modal-close" onClick={() => setSelectedRecord(null)} aria-label="Close details">
@@ -462,11 +464,11 @@ export function DailyProductionPage({
             </tr>)}</tbody>
           </table></div>
           {selectedRecord.status === 'confirmed' && <>
-            <form className="production-form production-detail-form" onSubmit={(event) => void saveYield(event)}>
+            <form className="production-form production-detail-form sfh-dialog-form" onSubmit={(event) => void saveYield(event)}>
               <label>Actual plates<input type="number" min="0" step="0.001" value={yieldDraft} onChange={(event) => setYieldDraft(event.target.value)} required /></label>
               <button className="production-button" disabled={saving}>Save yield</button>
             </form>
-            {canClose && <form className="production-form production-cancel-form" onSubmit={(event) => void submitCancellation(event)}>
+            {canClose && <form className="production-form production-cancel-form sfh-dialog-form" onSubmit={(event) => void submitCancellation(event)}>
               <h3>Cancel production / recover unused stock</h3>
               <p>Enter only quantities that are genuinely unused and safe to return. Omitted ingredients are treated as consumed or wasted.</p>
               {(selectedRecord.ingredients || []).map((ingredient) => <label key={ingredient.id}>{ingredient.ingredientName} recovery ({ingredient.unit})
@@ -781,7 +783,7 @@ export function BillingPosPage({
               </article>
             })}
             {!loading && visibleItems.length === 0 && <p className="operations-empty">No confirmed production is available for this date.</p>}
-            {loading && <p className="operations-empty">Loading available menu items…</p>}
+            {loading && <ApiLoadingIndicator label="Loading available menu items…" compact />}
           </div>
         </section>
 

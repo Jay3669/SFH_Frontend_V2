@@ -1,8 +1,10 @@
 import foodBackground from '../../assets/images/food-background.png'
 import logo from '../../assets/logos/sfh-logo.png'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { routes } from '../../app/router/routes'
+import { ApiLoadingIndicator } from '../../components/loaders/ApiLoadingIndicator'
+import { AutoDismissMessage } from '../../components/common/AutoDismissMessage/AutoDismissMessage'
 import { AdminLayout } from '../../layouts/AdminLayout'
 import type { AuthUser } from '../../types/auth.types'
 import { getStockSummary } from '../inventory/stockService'
@@ -101,7 +103,7 @@ export function DashboardPage({
               title="Stock health"
               description={stockSummary
                 ? `${stockSummary.lowStock} low · ${stockSummary.outOfStock} out of stock`
-                : 'Loading stock summary…'}
+                : <ApiLoadingIndicator label="Loading stock summary…" compact />}
               badge="Live inventory"
             />
             <WorkspaceCard
@@ -110,18 +112,18 @@ export function DashboardPage({
               title="Inventory value"
               description={stockSummary
                 ? `₹${Number(stockSummary.stockValue).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
-                : 'Loading inventory value…'}
+                : <ApiLoadingIndicator label="Loading inventory value…" compact />}
               badge="Live stock"
             />
           </section>
         )}
 
-        {dashboardError && (
+        {dashboardError && <AutoDismissMessage message={dashboardError} onDismiss={() => setDashboardError('')}>
           <div className="dashboard-note" role="alert">
             <span className="note-mark">i</span>
             <p>{dashboardError}</p>
           </div>
-        )}
+        </AutoDismissMessage>}
 
         <div className="section-heading">
           <div>
@@ -187,14 +189,14 @@ function WorkspaceCard({
   icon: string
   color: string
   title: string
-  description: string
+  description: ReactNode
   to?: string
   badge?: string
 }) {
   const content = (
     <>
       <span className={`workspace-card-icon ${color}`}>{icon}</span>
-      <div className="workspace-card-copy"><h3>{title}</h3><p>{description}</p></div>
+      <div className="workspace-card-copy"><h3>{title}</h3><div className="workspace-card-description">{description}</div></div>
       <span className="coming-soon">{badge || 'Coming soon'}</span>
     </>
   )

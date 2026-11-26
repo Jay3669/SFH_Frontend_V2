@@ -690,7 +690,7 @@
     font-weight: 700;
 }
 
-.workspace-card-copy p {
+.workspace-card-description {
     max-width: 230px;
     margin: 0;
     color: var(--color-muted);
@@ -783,7 +783,7 @@
         margin-top: 0;
     }
 
-    .workspace-card-copy p {
+    .workspace-card-description {
         max-width: unset;
     }
 }
@@ -1337,6 +1337,207 @@
 
 .MuiDialog-paper {
     box-shadow: 0 24px 70px rgba(16, 23, 35, 0.22) !important;
+}
+
+.sfh-form-dialog .MuiDialog-paper {
+    overflow: hidden;
+    border: 1px solid rgba(52, 58, 64, 0.08);
+    border-radius: 16px !important;
+    background: #fffdf9;
+}
+
+.sfh-form-dialog .MuiDialogTitle-root,
+.sfh-form-dialog .production-form-title {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 22px 24px 17px !important;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-size: 25px;
+    font-weight: 500;
+    line-height: 1.25;
+}
+
+.sfh-form-dialog .production-form-title {
+    grid-column: 1 / -1;
+    margin: -24px -24px 4px;
+}
+
+.sfh-form-dialog .production-form-title h3 {
+    margin: 0;
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-size: 25px;
+    font-weight: 500;
+}
+
+.sfh-form-dialog .production-form-title p {
+    margin: 6px 0 0;
+    color: var(--color-muted);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 400;
+}
+
+.sfh-form-dialog .MuiDialogContent-root {
+    padding: 21px 24px 24px !important;
+    color: var(--color-ink);
+    font-family: inherit;
+    font-size: 12px;
+}
+
+.sfh-form-dialog .MuiDialogActions-root {
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 0 24px 24px !important;
+}
+
+.sfh-dialog-form label:not(.production-checkbox):not(.MuiInputLabel-root) {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    color: #46463f;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 650;
+}
+
+.sfh-dialog-form input:not(.MuiInputBase-input):not([type="checkbox"]):not([type="radio"]),
+.sfh-dialog-form select:not(.MuiInputBase-input),
+.sfh-dialog-form textarea:not(.MuiInputBase-input) {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 40px;
+    padding: 9px 10px;
+    border: 1px solid #ddd7cb;
+    border-radius: 8px;
+    outline: 0;
+    color: var(--color-ink);
+    background: #fff;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.sfh-dialog-form textarea:not(.MuiInputBase-input) {
+    resize: vertical;
+}
+
+.sfh-dialog-form input:not(.MuiInputBase-input):not([type="checkbox"]):not([type="radio"]):focus,
+.sfh-dialog-form select:not(.MuiInputBase-input):focus,
+.sfh-dialog-form textarea:not(.MuiInputBase-input):focus {
+    border-color: #d99a32;
+    box-shadow: 0 0 0 3px rgba(217, 154, 50, 0.12);
+}
+
+.sfh-form-dialog .MuiOutlinedInput-root {
+    min-height: 40px;
+    border-radius: 8px;
+    background: #fff;
+    font-family: inherit;
+    font-size: 12px;
+}
+
+.sfh-form-dialog .MuiOutlinedInput-notchedOutline {
+    border-color: #ddd7cb;
+}
+
+.sfh-form-dialog .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+    border-color: #caa76a;
+}
+
+.sfh-form-dialog .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-width: 1px;
+    border-color: #d99a32;
+    box-shadow: 0 0 0 3px rgba(217, 154, 50, 0.12);
+}
+
+.sfh-form-dialog .MuiInputLabel-root {
+    color: #6f6c64;
+    font-family: inherit;
+    font-size: 12px;
+}
+
+.sfh-form-dialog .MuiButton-root,
+.sfh-form-dialog .sfh-button,
+.sfh-form-dialog .production-button {
+    min-height: 38px;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: none;
+    box-shadow: none;
+}
+
+.sfh-form-dialog .MuiButton-contained:not(.MuiButton-colorError) {
+    border: 1px solid #d99a32;
+    color: #fff;
+    background: #d99a32;
+}
+
+.sfh-form-dialog .MuiButton-contained:not(.MuiButton-colorError):hover {
+    border-color: #c88a24;
+    background: #c88a24;
+    box-shadow: 0 7px 16px rgba(217, 154, 50, 0.18);
+}
+
+.sfh-form-dialog .MuiButton-outlined,
+.sfh-form-dialog .sfh-button-secondary,
+.sfh-form-dialog .production-button-secondary {
+    border-color: #ddd7cb;
+    color: #343a40;
+    background: #fff;
+}
+
+.sfh-form-dialog .MuiButton-outlined:hover,
+.sfh-form-dialog .sfh-button-secondary:hover,
+.sfh-form-dialog .production-button-secondary:hover {
+    border-color: #c9bfae;
+    background: #faf8f4;
+}
+
+.sfh-form-dialog .MuiButton-startIcon,
+.sfh-form-dialog .MuiButton-endIcon {
+    color: inherit;
+}
+
+.sfh-form-dialog .MuiButton-startIcon svg,
+.sfh-form-dialog .MuiButton-endIcon svg,
+.sfh-form-dialog .MuiSvgIcon-root,
+.sfh-form-dialog .production-modal-close svg,
+.sfh-form-dialog .production-text-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+.sfh-form-dialog .production-modal-close {
+    flex: 0 0 34px;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    color: #6f6c64;
+    background: #fff;
+}
+
+@media (max-width: 600px) {
+    .sfh-form-dialog .MuiDialogTitle-root,
+    .sfh-form-dialog .MuiDialogContent-root {
+        padding-right: 18px !important;
+        padding-left: 18px !important;
+    }
+
+    .sfh-form-dialog .MuiDialogActions-root {
+        padding: 0 18px 18px !important;
+    }
+
+    .sfh-form-dialog .production-form-title {
+        margin: -18px -18px 4px;
+        padding: 18px 18px 14px !important;
+    }
 }
 
 @media (max-width: 980px) {

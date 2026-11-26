@@ -57,6 +57,7 @@ export function getMenuCategory(id: string) {
 export function createMenuCategory(input: {
   name: string
   description: string | null
+  imageUrl: string | null
   displayOrder?: number
   isActive?: boolean
 }) {
@@ -72,7 +73,7 @@ export function createMenuCategory(input: {
 
 export function updateMenuCategory(
   id: string,
-  input: Partial<Pick<MenuCategory, 'name' | 'description' | 'displayOrder' | 'isActive'>>,
+  input: Partial<Pick<MenuCategory, 'name' | 'description' | 'imageUrl' | 'displayOrder' | 'isActive'>>,
 ) {
   return authenticatedApiRequest<ProductionApiResponse<MenuCategory>>(
     `${apiEndpoints.production.menuCategories}/${id}`,
@@ -101,6 +102,7 @@ export function getMenuItems() {
 export function createMenuItem(input: {
   name: string
   categoryId: string
+  displayOrder: number
   isVegetarian: boolean
   price: number
   description: string | null

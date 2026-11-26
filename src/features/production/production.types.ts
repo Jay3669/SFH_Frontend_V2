@@ -5,9 +5,11 @@ export type ProductionApiResponse<T> = ApiResponse<T>
 
 export type MenuItem = {
   id: string
+  itemCode: string
   name: string
   category: string
   categoryId: string
+  displayOrder: number
   isVegetarian: boolean
   price: number | string
   description: string | null
@@ -17,8 +19,10 @@ export type MenuItem = {
 
 export type MenuCategory = {
   id: string
+  categoryCode: string
   name: string
   description: string | null
+  imageUrl: string | null
   displayOrder: number
   isActive: boolean
   menuItemCount: number

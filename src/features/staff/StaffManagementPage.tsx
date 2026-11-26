@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Alert, Avatar, Button, Card, CardContent, Chip, Dialog, DialogActions,
-  DialogContent, DialogTitle, LinearProgress, MenuItem, Skeleton, Table, TableBody, TableCell, TableHead,
+  DialogContent, DialogTitle, MenuItem, Table, TableBody, TableCell, TableHead,
   TablePagination, TableRow, TextField,
 } from '@mui/material'
 import { ArrowLeft, ArrowRight, BadgeIndianRupee, BriefcaseBusiness, CalendarDays, Check, CircleCheck, Download, MapPin, Plus, Save, ShieldCheck, UserRound, UsersRound, WalletCards } from 'lucide-react'
 import { AdminLayout } from '../../layouts/AdminLayout'
 import { ConfirmDialog } from '../../components/dialogs/ConfirmDialog'
+import { ApiLoadingIndicator } from '../../components/loaders/ApiLoadingIndicator'
+import { AutoDismissMessage } from '../../components/common/AutoDismissMessage/AutoDismissMessage'
 import { routes } from '../../app/router/routes'
 import type { AuthUser } from '../../types/auth.types'
 import { authenticatedApiRequest } from '../../services/api/apiClient'
@@ -104,15 +106,15 @@ export function StaffManagementPage({ user, onLogout }: { user: AuthUser; onLogo
             <button type="button" key={path} className={location.pathname === path ? 'active' : ''} onClick={() => go(path)}>{label}</button>
           ))}
         </nav>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {notice && <Alert severity="success" sx={{ mb: 2 }}>{notice}</Alert>}
+        {error && <AutoDismissMessage message={error} onDismiss={() => setError('')}><Alert severity="error" sx={{ mb: 2 }}>{error}</Alert></AutoDismissMessage>}
+        {notice && <AutoDismissMessage message={notice} onDismiss={() => setNotice('')}><Alert severity="success" sx={{ mb: 2 }}>{notice}</Alert></AutoDismissMessage>}
         {loading ? (
-          <div className="staff-loading">{[1, 2, 3, 4].map((item) => <Skeleton key={item} variant="rectangular" height={110} />)}</div>
+          <ApiLoadingIndicator label="Loading staff…" compact />
         ) : (
           <>
             {view === 'overview' && <Overview staff={staff} calculations={calculations} go={go} />}
             {view === 'list' && <StaffList staff={staff} roles={roles} reload={load} setNotice={setNotice} setError={setError} />}
-            {view === 'create' && <Onboarding roles={roles} onCreated={(member) => { setNotice(`${member.firstName} ${member.lastName} onboarded successfully.`); void load(); go(routes.staffList) }} setError={setError} />}
+            {view === 'create' && <Onboarding roles={roles} onClose={() => go(routes.staffList)} onCreated={(member) => { setNotice(`${member.firstName} ${member.lastName} onboarded successfully.`); void load(); go(routes.staffList) }} setError={setError} />}
             {view === 'roles' && <RolesView staff={staff} roles={roles} reload={load} setNotice={setNotice} setError={setError} />}
             {view === 'daily' && <DailyView staff={staff} roles={roles} calculations={calculations} reload={load} setNotice={setNotice} setError={setError} />}
             {view === 'profit' && <ProfitView calculations={calculations} reload={load} setNotice={setNotice} setError={setError} />}
@@ -267,8 +269,8 @@ function EditDialog({ member, onClose, reload, setNotice, setError }: {
     } catch (error) { setError(errorText(error)) }
   }
   return (
-    <Dialog open fullWidth maxWidth="sm" onClose={onClose}><DialogTitle>Edit staff profile</DialogTitle>
-      <form onSubmit={(event) => void submit(event)}><DialogContent className="staff-dialog-grid">
+    <Dialog open fullWidth maxWidth="sm" className="sfh-form-dialog" onClose={onClose}><DialogTitle>Edit staff profile</DialogTitle>
+      <form className="sfh-dialog-form" onSubmit={(event) => void submit(event)}><DialogContent className="staff-dialog-grid">
         <TextField label="First name" value={form.firstName} onChange={(event) => setForm({ ...form, firstName: event.target.value })} required />
         <TextField label="Last name" value={form.lastName} onChange={(event) => setForm({ ...form, lastName: event.target.value })} required />
         <TextField select label="Role" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as StaffRole })}><MenuItem value="manager">Manager</MenuItem><MenuItem value="cashier">Cashier</MenuItem><MenuItem value="employee">Employee</MenuItem></TextField>
@@ -298,15 +300,40 @@ function AssignmentDialog({ member, roles, onClose, reload, setNotice, setError 
     try { await removeStaffRole(member.id, assignment.id); const response = await getStaffRoleAssignments(member.id); setAssignments(response.data ?? []); setNotice('Role removed.'); await reload() } catch (error) { setError(errorText(error)) }
   }
   return (
-    <Dialog open fullWidth maxWidth="md" onClose={onClose}><DialogTitle>Assigned roles — {member.firstName} {member.lastName}</DialogTitle><DialogContent>
+    <Dialog open fullWidth maxWidth="md" className="sfh-form-dialog" onClose={onClose}><DialogTitle>Assigned roles — {member.firstName} {member.lastName}</DialogTitle><DialogContent>
       <div className="role-assignment-form"><TextField select label="Role" value={roleId} onChange={(event) => setRoleId(event.target.value)}>{roles.map((role) => <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>)}</TextField><TextField label="Profit %" type="number" value={percentage} onChange={(event) => setPercentage(event.target.value)} /><TextField label="Effective from" type="date" value={today()} disabled /><Button variant="contained" onClick={() => void add()}><Plus size={16} /> Add</Button></div>
-      {loading ? <LinearProgress /> : <Table size="small"><TableHead><TableRow><TableCell>Role</TableCell><TableCell>Profit share</TableCell><TableCell>Status</TableCell><TableCell align="right">Action</TableCell></TableRow></TableHead><TableBody>{assignments.map((item) => <TableRow key={item.id}><TableCell>{roles.find((role) => role.id === item.roleId)?.name || item.roleId}</TableCell><TableCell>{Number(item.customProfitPercentage ?? 0).toFixed(4)}%</TableCell><TableCell><Chip size="small" label={item.status} /></TableCell><TableCell align="right"><Button size="small" color="error" onClick={() => void remove(item)}>Remove</Button></TableCell></TableRow>)}</TableBody></Table>}
+      {loading ? (
+        <ApiLoadingIndicator label="Loading role assignments…" compact />
+      ) : (
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Role</TableCell>
+              <TableCell>Profit share</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell align="right">Action</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {assignments.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell>{roles.find((role) => role.id === item.roleId)?.name || item.roleId}</TableCell>
+                <TableCell>{Number(item.customProfitPercentage ?? 0).toFixed(4)}%</TableCell>
+                <TableCell><Chip size="small" label={item.status} /></TableCell>
+                <TableCell align="right">
+                  <Button size="small" color="error" onClick={() => void remove(item)}>Remove</Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </DialogContent><DialogActions><Button onClick={onClose}>Close</Button></DialogActions></Dialog>
   )
 }
 
-function Onboarding({ roles, onCreated, setError }: {
-  roles: StaffJobRole[]; onCreated: (member: StaffMember) => void; setError: (value: string) => void
+function Onboarding({ roles, onClose, onCreated, setError }: {
+  roles: StaffJobRole[]; onClose: () => void; onCreated: (member: StaffMember) => void; setError: (value: string) => void
 }) {
   const [step, setStep] = useState(0)
   const [highestStep, setHighestStep] = useState(0)
@@ -434,17 +461,24 @@ function Onboarding({ roles, onCreated, setError }: {
 
   if (success) {
     return (
-      <Card className="staff-wizard-card staff-success-card"><CardContent>
-        <div className="staff-success-icon"><Check size={34} /></div>
-        <p className="staff-success-kicker">ONBOARDING COMPLETE</p>
-        <h2>{form.firstName} {form.lastName} has been added</h2>
-        <p>The staff profile and assigned roles are ready.</p>
-      </CardContent></Card>
+      <Dialog open fullWidth maxWidth="sm" onClose={onClose} aria-labelledby="staff-onboarding-success-title">
+        <DialogContent>
+          <Card className="staff-wizard-card staff-success-card"><CardContent>
+            <div className="staff-success-icon"><Check size={34} /></div>
+            <p className="staff-success-kicker">ONBOARDING COMPLETE</p>
+            <h2 id="staff-onboarding-success-title">{form.firstName} {form.lastName} has been added</h2>
+            <p>The staff profile and assigned roles are ready.</p>
+          </CardContent></Card>
+        </DialogContent>
+      </Dialog>
     )
   }
 
   return (
-    <Card className="staff-wizard-card"><CardContent>
+    <Dialog open fullWidth maxWidth="lg" className="sfh-form-dialog" onClose={onClose} aria-labelledby="staff-onboarding-title">
+      <DialogTitle id="staff-onboarding-title">Staff onboarding</DialogTitle>
+      <DialogContent dividers>
+        <Card className="staff-wizard-card"><CardContent>
       <div className="premium-stepper-header">
         <div>
           <p>STAFF ONBOARDING</p>
@@ -472,7 +506,7 @@ function Onboarding({ roles, onCreated, setError }: {
         })}
       </nav>
 
-      {validationMessage && <Alert severity="error" className="staff-inline-alert">{validationMessage}</Alert>}
+      {validationMessage && <AutoDismissMessage message={validationMessage} onDismiss={() => setValidationMessage('')}><Alert severity="error" className="staff-inline-alert">{validationMessage}</Alert></AutoDismissMessage>}
 
       <div className="staff-wizard-body premium-step-content" key={step}>
         {step === 0 && (
@@ -544,7 +578,12 @@ function Onboarding({ roles, onCreated, setError }: {
           ? <Button className="wizard-primary-action" variant="contained" endIcon={<ArrowRight size={16} />} onClick={continueStep}>Continue</Button>
           : <Button className="wizard-primary-action" variant="contained" disabled={saving || Object.keys(selected).length === 0} onClick={() => void submit()}>{saving ? 'Creating staff…' : 'Submit & onboard'}</Button>}
       </div>
-    </CardContent></Card>
+        </CardContent></Card>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel onboarding</Button>
+      </DialogActions>
+    </Dialog>
   )
 }
 
@@ -581,7 +620,7 @@ function RoleDialog({ role, onClose, reload, setNotice, setError }: {
       await reload()
     } catch (error) { setError(errorText(error)) }
   }
-  return <Dialog open fullWidth maxWidth="xs" onClose={onClose}><DialogTitle>Configure {role.name}</DialogTitle><DialogContent className="staff-dialog-grid"><TextField label="Suggested profit %" type="number" value={percentage} onChange={(event) => setPercentage(event.target.value)} /><TextField label="Effective from" type="date" value={effectiveFrom} onChange={(event) => setEffectiveFrom(event.target.value)} /><Alert severity="info" sx={{ gridColumn: '1 / -1' }}>Individual employee-role percentages remain independent.</Alert></DialogContent><DialogActions><Button variant="outlined" onClick={onClose}>Cancel</Button><Button variant="contained" onClick={() => void save()}>Save</Button></DialogActions></Dialog>
+  return <Dialog open fullWidth maxWidth="xs" className="sfh-form-dialog" onClose={onClose}><DialogTitle>Configure {role.name}</DialogTitle><DialogContent className="staff-dialog-grid"><TextField label="Suggested profit %" type="number" value={percentage} onChange={(event) => setPercentage(event.target.value)} /><TextField label="Effective from" type="date" value={effectiveFrom} onChange={(event) => setEffectiveFrom(event.target.value)} /><Alert severity="info" sx={{ gridColumn: '1 / -1' }}>Individual employee-role percentages remain independent.</Alert></DialogContent><DialogActions><Button variant="outlined" onClick={onClose}>Cancel</Button><Button variant="contained" onClick={() => void save()}>Save</Button></DialogActions></Dialog>
 }
 
 function DailyView({ staff, roles, calculations, reload, setNotice, setError }: {
@@ -620,7 +659,7 @@ function ProfitView({ calculations, reload, setNotice, setError }: {
     <section className="staff-filter-card"><TextField label="Business date" type="date" value={date} onChange={(event) => setDate(event.target.value)} /><TextField select label="Status" value={status} onChange={(event) => setStatus(event.target.value)}><MenuItem value="all">All statuses</MenuItem><MenuItem value="pending_approval">Pending</MenuItem><MenuItem value="approved">Approved</MenuItem><MenuItem value="rejected">Rejected</MenuItem></TextField></section>
     <Card className="staff-table-card"><CardContent><Table size="small" className="staff-table-mui"><TableHead><TableRow><TableCell>Date</TableCell><TableCell>NET profit</TableCell><TableCell>Allocation</TableCell><TableCell>Staff share</TableCell><TableCell>Status</TableCell><TableCell align="right">Actions</TableCell></TableRow></TableHead><TableBody>{filtered.map((item) => <TableRow key={item.id}><TableCell>{item.businessDate}</TableCell><TableCell>{money(item.eligibleNetProfit)}</TableCell><TableCell>{Number(item.totalAllocationPercentage).toFixed(4)}%</TableCell><TableCell>{money(item.totalProfitShare)}</TableCell><TableCell><Chip size="small" color={item.status === 'approved' ? 'success' : item.status === 'rejected' ? 'error' : 'warning'} label={item.status.replaceAll('_', ' ')} /></TableCell><TableCell align="right"><Button size="small" onClick={() => setDetails(item)}>Details</Button>{item.status === 'pending_approval' && <><Button size="small" color="success" onClick={() => void approve(item.id)}>Approve</Button><Button size="small" color="error" onClick={() => setRejectId(item.id)}>Reject</Button></>}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
     <Dialog open={Boolean(details)} fullWidth maxWidth="sm" onClose={() => setDetails(null)}><DialogTitle>Calculation details</DialogTitle><DialogContent>{details && <><div className="profit-breakdown"><div><span>NET profit</span><strong>{money(details.eligibleNetProfit)}</strong></div><div><span>Staff share</span><strong>{money(details.totalProfitShare)}</strong></div></div>{details.details?.map((row) => <div className="profit-detail-row" key={row.id}><span>{row.roleId}</span><strong>{Number(row.appliedPercentage).toFixed(4)}%</strong><strong>{money(row.calculatedShare)}</strong></div>)}</>}</DialogContent><DialogActions><Button onClick={() => setDetails(null)}>Close</Button></DialogActions></Dialog>
-    <Dialog open={Boolean(rejectId)} maxWidth="xs" fullWidth onClose={() => setRejectId(null)}><DialogTitle>Reject allocation</DialogTitle><DialogContent><TextField fullWidth multiline minRows={3} label="Reason" value={remarks} onChange={(event) => setRemarks(event.target.value)} /></DialogContent><DialogActions><Button variant="outlined" onClick={() => setRejectId(null)}>Cancel</Button><Button variant="contained" color="error" disabled={!remarks.trim()} onClick={() => void reject()}>Reject</Button></DialogActions></Dialog>
+    <Dialog open={Boolean(rejectId)} maxWidth="xs" fullWidth className="sfh-form-dialog" onClose={() => setRejectId(null)}><DialogTitle>Reject allocation</DialogTitle><DialogContent><TextField fullWidth multiline minRows={3} label="Reason" value={remarks} onChange={(event) => setRemarks(event.target.value)} /></DialogContent><DialogActions><Button variant="outlined" onClick={() => setRejectId(null)}>Cancel</Button><Button variant="contained" color="error" disabled={!remarks.trim()} onClick={() => void reject()}>Reject</Button></DialogActions></Dialog>
   </>
 }
 
@@ -656,7 +695,7 @@ function PaymentsView({ staff, calculations, setNotice, setError }: {
       const member = staff.find((staffMember) => staffMember.id === detail.staffId)
       return <TableRow key={detail.id}><TableCell>{item.businessDate}</TableCell><TableCell>{member ? `${member.firstName} ${member.lastName}` : detail.staffId}</TableCell><TableCell>{money(detail.calculatedShare)}</TableCell><TableCell><Chip size="small" color="warning" label="Pending payment" /></TableCell><TableCell align="right"><Button size="small" onClick={() => { setCalculationId(item.id); setDetailId(detail.id); setAmount(String(detail.calculatedShare)); setOpen(true) }}>Pay</Button></TableCell></TableRow>
     })}</TableBody></Table></CardContent></Card>
-    <Dialog open={open} fullWidth maxWidth="sm" onClose={() => setOpen(false)}><DialogTitle>Record staff payment</DialogTitle><DialogContent className="staff-dialog-grid"><TextField select label="Approved allocation" value={calculationId} onChange={(event) => { setCalculationId(event.target.value); setDetailId('') }}>{approved.map((item) => <MenuItem key={item.id} value={item.id}>{item.businessDate} — {money(item.totalProfitShare)}</MenuItem>)}</TextField><TextField select label="Employee payable" value={detailId} onChange={(event) => setDetailId(event.target.value)}>{calculation?.details?.map((item) => <MenuItem key={item.id} value={item.id}>{staff.find((member) => member.id === item.staffId)?.firstName || item.staffId} — {money(item.calculatedShare)}</MenuItem>)}</TextField><TextField label="Payment date" type="date" value={date} onChange={(event) => setDate(event.target.value)} /><TextField select label="Method" value={method} onChange={(event) => setMethod(event.target.value as typeof method)}><MenuItem value="cash">Cash</MenuItem><MenuItem value="upi">UPI</MenuItem><MenuItem value="bank_transfer">Bank transfer</MenuItem></TextField><TextField label="Amount" type="number" value={amount} onChange={(event) => setAmount(event.target.value)} /></DialogContent><DialogActions><Button variant="outlined" onClick={() => setOpen(false)}>Cancel</Button><Button variant="contained" onClick={() => void save()}>Record payment</Button></DialogActions></Dialog>
+    <Dialog open={open} fullWidth maxWidth="sm" className="sfh-form-dialog" onClose={() => setOpen(false)}><DialogTitle>Record staff payment</DialogTitle><DialogContent className="staff-dialog-grid"><TextField select label="Approved allocation" value={calculationId} onChange={(event) => { setCalculationId(event.target.value); setDetailId('') }}>{approved.map((item) => <MenuItem key={item.id} value={item.id}>{item.businessDate} — {money(item.totalProfitShare)}</MenuItem>)}</TextField><TextField select label="Employee payable" value={detailId} onChange={(event) => setDetailId(event.target.value)}>{calculation?.details?.map((item) => <MenuItem key={item.id} value={item.id}>{staff.find((member) => member.id === item.staffId)?.firstName || item.staffId} — {money(item.calculatedShare)}</MenuItem>)}</TextField><TextField label="Payment date" type="date" value={date} onChange={(event) => setDate(event.target.value)} /><TextField select label="Method" value={method} onChange={(event) => setMethod(event.target.value as typeof method)}><MenuItem value="cash">Cash</MenuItem><MenuItem value="upi">UPI</MenuItem><MenuItem value="bank_transfer">Bank transfer</MenuItem></TextField><TextField label="Amount" type="number" value={amount} onChange={(event) => setAmount(event.target.value)} /></DialogContent><DialogActions><Button variant="outlined" onClick={() => setOpen(false)}>Cancel</Button><Button variant="contained" onClick={() => void save()}>Record payment</Button></DialogActions></Dialog>
   </>
 }
 

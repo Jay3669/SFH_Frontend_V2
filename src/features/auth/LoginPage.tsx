@@ -5,7 +5,8 @@ import { Logo } from '../../components/common/Logo/Logo'
 import { useAuth } from '../../hooks/useAuth'
 import { isValidIdentifier } from '../../utils/validators'
 import { dashboardPath } from '../../app/router/routes'
-import { Alert, CircularProgress, IconButton, InputAdornment, TextField, Button } from '@mui/material'
+import { AutoDismissMessage } from '../../components/common/AutoDismissMessage/AutoDismissMessage'
+import { Alert, IconButton, InputAdornment, TextField, Button } from '@mui/material'
 import { Visibility, VisibilityOff, MailOutlined, LockOutlined } from '@mui/icons-material'
 
 export function LoginPage() {
@@ -114,10 +115,10 @@ export function LoginPage() {
               }}
             />
 
-            {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
+            {errorMessage && <AutoDismissMessage message={errorMessage} onDismiss={() => setErrorMessage('')}><Alert severity="error">{errorMessage}</Alert></AutoDismissMessage>}
 
             <Button className="login-submit" type="submit" variant="contained" disabled={isLoading} fullWidth>
-              {isLoading ? <CircularProgress size={20} color="inherit" /> : 'Sign in securely'}
+              {isLoading ? 'Signing in…' : 'Sign in securely'}
             </Button>
           </form>
 

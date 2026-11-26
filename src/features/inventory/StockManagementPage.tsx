@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { AppTooltip } from '../../components/common/Tooltip/AppTooltip'
+import { AutoDismissMessage } from '../../components/common/AutoDismissMessage/AutoDismissMessage'
 import { ConfirmDialog } from '../../components/dialogs/ConfirmDialog'
 import { Icon } from '../../components/common/Icon/Icon'
 import { AdminLayout } from '../../layouts/AdminLayout'
@@ -10,6 +11,7 @@ import {
   createStockItem,
   deleteStockCategory,
   getStockCategories,
+  getNextStockItemDisplayOrder,
   getStockItems,
   getStockMovements,
   getStockSummary,
@@ -31,6 +33,7 @@ import { capitalizeFirstLetter } from '../../utils/capitalizeFirstLetter'
 import { AppTextField } from '../../components/common/AppTextField'
 import { AppSelect } from '../../components/common/AppSelect'
 import { AppButton } from '../../components/common/AppButton'
+import { ApiLoadingIndicator } from '../../components/loaders/ApiLoadingIndicator'
 import { TablePagination } from '../../components/tables/TablePagination/TablePagination'
 import noCategoryImage from '../../assets/images/no-category-image.png'
 import { SlidersHorizontal } from 'lucide-react'
@@ -39,9 +42,9 @@ import './stock.css'
 type Tab = 'items' | 'activity' | 'categories'
 type ItemFilter = 'active' | 'low' | 'out' | 'inactive'
 type DialogState =
-  | { type: 'item'; item?: StockItem }
+  | { type: 'item'; item?: StockItem; defaultDisplayOrder?: number }
   | { type: 'movement'; item: StockItem }
-  | { type: 'category'; category?: StockCategory }
+  | { type: 'category'; category?: StockCategory; defaultDisplayOrder?: number }
   | null
 type ConfirmationState = {
   title: string
@@ -62,6 +65,13 @@ const dateText = (value: string) =>
   new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
 const errorText = (error: unknown) =>
   error instanceof Error ? error.message : 'The stock request could not be completed.'
+const nextDisplayOrder = (records: readonly { displayOrder: number }[]) =>
+  records.reduce(
+    (next, record) => Number.isFinite(record.displayOrder)
+      ? Math.max(next, record.displayOrder + 1)
+      : next,
+    1,
+  )
 
 export function StockManagementPage({
   user,
@@ -136,6 +146,16 @@ export function StockManagementPage({
     setDialog(null)
     setNotice(item ? 'Stock item updated.' : 'Stock item created.')
     refreshData()
+  }
+
+  async function openAddStockItemDialog() {
+    setError('')
+    try {
+      const defaultDisplayOrder = await getNextStockItemDisplayOrder()
+      setDialog({ type: 'item', defaultDisplayOrder })
+    } catch (requestError) {
+      setError(errorText(requestError))
+    }
   }
 
   async function saveCategory(input: StockCategoryInput, category?: StockCategory) {
@@ -245,11 +265,15 @@ export function StockManagementPage({
             <p className="stock-subtitle">Track ingredients and supplies, record every movement, and stay ahead of low stock.</p>
           </div>
           {tab === 'categories' ? (
-            <button className="sfh-button" type="button" onClick={() => setDialog({ type: 'category' })}>
+            <button
+              className="sfh-button"
+              type="button"
+              onClick={() => setDialog({ type: 'category', defaultDisplayOrder: nextDisplayOrder(categories) })}
+            >
               <Icon name="add" size={16} /> Add category
             </button>
           ) : tab === 'items' ? (
-            <button className="sfh-button" type="button" onClick={() => setDialog({ type: 'item' })}>
+            <button className="sfh-button" type="button" onClick={() => void openAddStockItemDialog()}>
               <Icon name="add" size={16} /> Add stock item
             </button>
           ) : null}
@@ -279,20 +303,20 @@ export function StockManagementPage({
           </section>
         )}
 
-        {notice && (
+        {notice && <AutoDismissMessage message={notice} onDismiss={() => setNotice('')}>
           <div className="stock-notice" role="status">
             <span>{notice}</span>
             <button type="button" aria-label="Dismiss notification" onClick={() => setNotice('')}><Icon name="close" size={16} /></button>
           </div>
-        )}
-        {error && (
+        </AutoDismissMessage>}
+        {error && <AutoDismissMessage message={error} onDismiss={() => setError('')}>
           <div className="stock-error" role="alert">
             <span>{error}</span>
             <button className="sfh-button sfh-button-secondary" type="button" onClick={refreshData}>
               Retry
             </button>
           </div>
-        )}
+        </AutoDismissMessage>}
 
         <section className="stock-panel">
           <div className="stock-panel-top">
@@ -365,7 +389,7 @@ export function StockManagementPage({
           </div>
 
           {isLoading ? (
-            <div className="stock-empty" role="status"><span className="stock-spinner" /> Loading stock data…</div>
+            <div className="stock-empty"><ApiLoadingIndicator label="Loading stock data…" compact /></div>
           ) : tab === 'items' ? (
             <ItemsTable
               items={items}
@@ -402,6 +426,7 @@ export function StockManagementPage({
       {dialog?.type === 'item' && (
         <ItemDialog
           item={dialog.item}
+          defaultDisplayOrder={dialog.defaultDisplayOrder ?? 1}
           categories={categories}
           onClose={() => setDialog(null)}
           onSave={saveItem}
@@ -417,6 +442,7 @@ export function StockManagementPage({
       {dialog?.type === 'category' && (
         <CategoryDialog
           category={dialog.category}
+          defaultDisplayOrder={dialog.defaultDisplayOrder ?? 1}
           onClose={() => setDialog(null)}
           onSave={saveCategory}
         />
@@ -650,7 +676,17 @@ function CategoriesTable({
               </td>
               <td>{category.categoryCode}</td>
               <td><span className="stock-item-name">{category.name}</span></td>
-              <td>{category.description || '—'}</td>
+              <td>
+                {category.description ? (
+                  <AppTooltip title={category.description}>
+                    <span>
+                      {category.description.length > 50
+                        ? `${category.description.slice(0, 50)}....`
+                        : category.description}
+                    </span>
+                  </AppTooltip>
+                ) : '—'}
+              </td>
               <td>{category.itemCount}</td>
               <td>
                 <div className="stock-row-actions">
@@ -705,11 +741,13 @@ function Modal({
 
 function ItemDialog({
   item,
+  defaultDisplayOrder,
   categories,
   onClose,
   onSave,
 }: {
   item?: StockItem
+  defaultDisplayOrder: number
   categories: StockCategory[]
   onClose: () => void
   onSave: (input: StockItemInput, item?: StockItem) => Promise<void>
@@ -718,7 +756,7 @@ function ItemDialog({
   const [sku, setSku] = useState(capitalizeFirstLetter(item?.sku ?? ''))
   const [imageUrl, setImageUrl] = useState(item?.imageUrl ?? '')
   const [expiryDate, setExpiryDate] = useState(item?.expiryDate ?? '')
-  const [displayOrder, setDisplayOrder] = useState(item?.displayOrder ?? 0)
+  const [displayOrder, setDisplayOrder] = useState(item?.displayOrder ?? defaultDisplayOrder)
   const [categoryId, setCategoryId] = useState(
     item?.categoryId ?? categories.find((category) => category.name === item?.category)?.id ?? '',
   )
@@ -755,7 +793,7 @@ function ItemDialog({
       description="Item code is generated automatically. Set the item details and low-stock threshold."
       onClose={onClose}
     >
-      <form className="stock-form" onSubmit={submit}>
+      <form className="stock-form sfh-dialog-form" onSubmit={submit}>
         <div className="stock-form-grid">
           <FormField label="Item name">
             <AppTextField placeholder="Item name" required value={name} onChange={(event) => setName(capitalizeFirstLetter(event.target.value))} slotProps={{ htmlInput: { maxLength: 120 } }} />
@@ -795,7 +833,7 @@ function ItemDialog({
         {categories.length === 0 && (
           <p className="stock-form-error">Create a category before adding stock items.</p>
         )}
-        {error && <p className="stock-form-error" role="alert">{error}</p>}
+        {error && <AutoDismissMessage message={error} onDismiss={() => setError('')}><p className="stock-form-error" role="alert">{error}</p></AutoDismissMessage>}
         <div className="stock-modal-actions">
           <button className="sfh-button sfh-button-secondary" type="button" onClick={onClose}>Cancel</button>
           <button className="sfh-button" type="submit" disabled={isSaving || categories.length === 0}>
@@ -847,7 +885,7 @@ function MovementDialog({
       description={`Current available stock: ${currentQuantity}`}
       onClose={onClose}
     >
-      <form className="stock-form" onSubmit={submit}>
+      <form className="stock-form sfh-dialog-form" onSubmit={submit}>
         <FormField label="Movement type">
           <AppSelect
             placeholder="Movement type"
@@ -894,7 +932,7 @@ function MovementDialog({
             slotProps={{ htmlInput: { maxLength: 255 } }}
           />
         </FormField>
-        {error && <p className="stock-form-error" role="alert">{error}</p>}
+        {error && <AutoDismissMessage message={error} onDismiss={() => setError('')}><p className="stock-form-error" role="alert">{error}</p></AutoDismissMessage>}
         <div className="stock-modal-actions">
           <button className="sfh-button sfh-button-secondary" type="button" onClick={onClose}>Cancel</button>
           <button className="sfh-button" type="submit" disabled={isSaving}>
@@ -908,17 +946,19 @@ function MovementDialog({
 
 function CategoryDialog({
   category,
+  defaultDisplayOrder,
   onClose,
   onSave,
 }: {
   category?: StockCategory
+  defaultDisplayOrder: number
   onClose: () => void
   onSave: (input: StockCategoryInput, category?: StockCategory) => Promise<void>
 }) {
   const [name, setName] = useState(capitalizeFirstLetter(category?.name ?? ''))
   const [description, setDescription] = useState(capitalizeFirstLetter(category?.description ?? ''))
   const [imageUrl, setImageUrl] = useState(category?.imageUrl ?? '')
-  const [displayOrder, setDisplayOrder] = useState<number | ''>(category?.displayOrder ?? '')
+  const [displayOrder, setDisplayOrder] = useState<number | ''>(category?.displayOrder ?? defaultDisplayOrder)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -946,7 +986,7 @@ function CategoryDialog({
       description="Categories help organize stock items and are shared across inventory."
       onClose={onClose}
     >
-      <form className="stock-form" onSubmit={submit}>
+      <form className="stock-form sfh-dialog-form" onSubmit={submit}>
         <FormField label="Category name">
           <input maxLength={80} required value={name} onChange={(event) => setName(capitalizeFirstLetter(event.target.value))} />
         </FormField>
@@ -959,7 +999,7 @@ function CategoryDialog({
         <FormField label="Display order (optional)">
           <input type="number" min={1} max={100000} step={1} value={displayOrder} onChange={(event) => setDisplayOrder(event.target.value === '' ? '' : Number(event.target.value))} />
         </FormField>
-        {error && <p className="stock-form-error" role="alert">{error}</p>}
+        {error && <AutoDismissMessage message={error} onDismiss={() => setError('')}><p className="stock-form-error" role="alert">{error}</p></AutoDismissMessage>}
         <div className="stock-modal-actions">
           <button className="sfh-button sfh-button-secondary" type="button" onClick={onClose}>Cancel</button>
           <button className="sfh-button" type="submit" disabled={isSaving}>

@@ -1,10 +1,19 @@
 import { AppRouter } from './router'
 import { useAuth } from '../hooks/useAuth'
+import { ApiLoadingIndicator } from '../components/loaders/ApiLoadingIndicator'
+import { ApiLoadingOverlay } from '../components/loaders/ApiLoadingOverlay'
 
 export default function App() {
-  const { authReady, user } = useAuth()
-  if (!authReady && !user) {
-    return <main className="auth-loading" aria-live="polite">Checking your session…</main>
-  }
-  return <AppRouter />
+  const { authReady, authState, user } = useAuth()
+  const suppressApiLoader = !user ||
+    authState === 'SESSION_EXPIRED' ||
+    authState === 'LOGGING_OUT'
+  return (
+    <>
+      <ApiLoadingOverlay disabled={suppressApiLoader} />
+      {!authReady && !user && authState === 'AUTHENTICATING'
+        ? <ApiLoadingIndicator label="Checking your session…" />
+        : <AppRouter />}
+    </>
+  )
 }
