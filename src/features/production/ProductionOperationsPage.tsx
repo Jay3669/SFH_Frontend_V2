@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { AppSelect } from '../../components/common/AppSelect'
 import { Icon } from '../../components/common/Icon/Icon'
 import { AutoDismissMessage } from '../../components/common/AutoDismissMessage/AutoDismissMessage'
 import { ApiLoadingIndicator } from '../../components/loaders/ApiLoadingIndicator'
@@ -44,6 +45,7 @@ function PageFrame({
   title,
   eyebrow,
   description,
+  pageClassName,
   children,
 }: {
   user: AuthUser
@@ -51,6 +53,7 @@ function PageFrame({
   title: string
   eyebrow: string
   description: string
+  pageClassName?: string
   children: ReactNode
 }) {
   return (
@@ -60,7 +63,7 @@ function PageFrame({
       sectionTitle={title}
       onLogout={onLogout}
     >
-      <main className="operations-page">
+      <main className={`operations-page${pageClassName ? ` ${pageClassName}` : ''}`}>
         <header className="operations-heading">
           <div>
             <p className="eyebrow">{eyebrow}</p>
@@ -106,7 +109,6 @@ export function DailyProductionPage({
   const [selectedRecord, setSelectedRecord] = useState<ProductionRecord | null>(null)
   const [yieldDraft, setYieldDraft] = useState('')
   const [cancelReason, setCancelReason] = useState('')
-  const [recoveryDraft, setRecoveryDraft] = useState<Record<string, string>>({})
   const [regionalFormat, setRegionalFormat] = useState(DEFAULT_REGIONAL_FORMAT)
   const [settingsError, setSettingsError] = useState('')
   const canClose = user.role === 'admin' || user.role === 'manager'
@@ -173,7 +175,6 @@ export function DailyProductionPage({
       setSelectedRecord(selected)
       setYieldDraft(String(selected.actualPlateCount ?? selected.expectedPlateCount))
       setCancelReason('')
-      setRecoveryDraft({})
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Could not load production details.')
     } finally {
@@ -204,18 +205,11 @@ export function DailyProductionPage({
     setSaving(true)
     setError('')
     try {
-      const recoveries = selectedRecord.ingredients?.flatMap((ingredient) => {
-        const quantityRecovered = Number(recoveryDraft[ingredient.id] || 0)
-        return quantityRecovered > 0
-          ? [{ productionIngredientId: ingredient.id, quantityRecovered }]
-          : []
-      }) || []
       const response = await cancelProduction(selectedRecord.id, {
         reason: cancelReason.trim(),
-        recoveries,
       })
       setSelectedRecord(response.data || selectedRecord)
-      setNotice('Production cancelled. Only the entered unused quantities were returned to stock.')
+      setNotice('Production cancelled. All recorded ingredient quantities were returned to stock.')
       setRefreshKey((key) => key + 1)
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Could not cancel production.')
@@ -297,9 +291,10 @@ export function DailyProductionPage({
       title="Daily Production"
       eyebrow="KITCHEN OPERATIONS"
       description="Plan today’s batches, review ingredient cost, and close the day’s unsold plates."
+      pageClassName="operations-daily-page"
     >
       <Alert error={error || settingsError} notice={notice} />
-      <section className="operations-panel operations-toolbar">
+      <section className="operations-panel operations-toolbar operations-daily-toolbar">
         <label>Production date
           <input type="date" value={productionDate} onChange={(event) => {
             setProductionDate(event.target.value)
@@ -307,8 +302,8 @@ export function DailyProductionPage({
             setNotice('')
           }} />
         </label>
-        <button type="button" className="sfh-button sfh-button-secondary" onClick={resetProductionDate}>
-          <Icon name="reset" size={14} /> Reset filters
+        <button type="button" className="sfh-button sfh-button-secondary operations-today-button" onClick={resetProductionDate}>
+          <Icon name="reset" size={14} /> Today
         </button>
         <div className={`operations-day-state${availability?.isClosed ? ' is-closed' : ''}`}>
           {availability?.isClosed ? 'Day closed' : 'Day open'}
@@ -323,7 +318,7 @@ export function DailyProductionPage({
         </button>}
       </section>
 
-      <section className="operations-metrics">
+      <section className="operations-metrics operations-daily-metrics">
         <Metric label="Produced plates" value={quantity(availability?.summary.producedPlates ?? 0)} />
         <Metric label="Sold plates" value={quantity(availability?.summary.soldPlates ?? 0)} />
         <Metric label="Available plates" value={quantity(availability?.summary.availablePlates ?? 0)} />
@@ -332,22 +327,28 @@ export function DailyProductionPage({
         <Metric label="Actual sales" value={money(availability?.summary.actualSales ?? 0)} />
       </section>
 
-      <div className="operations-columns">
-        <section className="operations-panel">
+      <div className="operations-columns operations-daily-columns">
+        <section className="operations-panel operations-daily-batch-panel">
           <div className="operations-panel-heading">
             <div><h2>Prepare a batch</h2><p>Ingredient quantities and costs come from the current recipe and inventory cost.</p></div>
           </div>
           <form className="operations-form" onSubmit={(event) => void createPreview(event)}>
             <label>Menu item / recipe
-              <select value={recipeId} onChange={(event) => {
-                const nextRecipe = activeRecipes.find((recipe) => recipe.id === event.target.value)
-                setRecipeId(event.target.value)
-                setUnit(nextRecipe?.current?.baseProductionUnit ?? 'kg')
-                setPreview(null)
-              }} required>
-                <option value="">Select a recipe</option>
-                {activeRecipes.map((recipe) => <option key={recipe.id} value={recipe.id}>{recipe.menuItem.name}</option>)}
-              </select>
+              <AppSelect
+                value={recipeId}
+                displayEmpty
+                onChange={(event) => {
+                  const nextRecipe = activeRecipes.find((recipe) => recipe.id === event.target.value)
+                  setRecipeId(event.target.value)
+                  setUnit(nextRecipe?.current?.baseProductionUnit ?? 'kg')
+                  setPreview(null)
+                }}
+                required
+                options={[
+                  { value: '', label: 'Select a recipe' },
+                  ...activeRecipes.map((recipe) => ({ value: recipe.id, label: recipe.menuItem.name })),
+                ]}
+              />
             </label>
             <label>Preparation quantity
               <div className="operations-inline-input">
@@ -355,10 +356,15 @@ export function DailyProductionPage({
                   setProductionQuantity(event.target.value)
                   setPreview(null)
                 }} required />
-                <select value={unit} onChange={(event) => setUnit(event.target.value)} aria-label="Preparation unit">
-                  {[...new Set([unit, selectedRecipe?.current?.baseProductionUnit ?? 'kg', 'kg', 'g', 'l', 'ml'])].map((option) =>
-                    <option key={option} value={option}>{option}</option>)}
-                </select>
+                <AppSelect
+                  value={unit}
+                  onChange={(event) => setUnit(event.target.value)}
+                  aria-label="Preparation unit"
+                  options={[...new Set([unit, selectedRecipe?.current?.baseProductionUnit ?? 'kg', 'kg', 'g', 'l', 'ml'])].map((option) => ({
+                    value: option,
+                    label: option,
+                  }))}
+                />
               </div>
             </label>
             <button className="sfh-button" disabled={saving || loading || availability?.isClosed}>
@@ -394,22 +400,26 @@ export function DailyProductionPage({
           </div>}
         </section>
 
-        <section className="operations-panel">
+        <section className="operations-panel operations-daily-list-panel">
           <div className="operations-panel-heading">
             <div><h2>Today’s production</h2><p>Available plates are tracked by menu item and production date.</p></div>
           </div>
           <div className="operations-menu-list">
             {(availability?.items ?? []).map((item) => (
-              <article className="operations-menu-row" key={item.menuItemId}>
+              <article className="operations-menu-row operations-daily-menu-row" key={item.menuItemId}>
                 {item.imageUrl
                   ? <img src={item.imageUrl} alt="" />
                   : <span className="operations-image-placeholder">{item.name.slice(0, 1)}</span>}
                 <div className="operations-menu-copy">
                   <strong>{item.name}</strong>
                   <span>{item.category} · {money(item.price)} per plate</span>
-                  <small>Produced {quantity(item.producedPlates)} · Sold {quantity(item.soldPlates)} · Available {quantity(item.availablePlates)}</small>
+                  <div className="operations-menu-stats">
+                    <span><small>Produced</small><strong>{quantity(item.producedPlates)}</strong></span>
+                    <span><small>Sold</small><strong>{quantity(item.soldPlates)}</strong></span>
+                    <span><small>Available</small><strong>{quantity(item.availablePlates)}</strong></span>
+                  </div>
                 </div>
-                <strong>{money(item.productionCost)}</strong>
+                <strong className="operations-daily-row-cost">{money(item.productionCost)}<small>batch cost</small></strong>
               </article>
             ))}
             {!loading && availability?.items.length === 0 && <p className="operations-empty">No production has been confirmed for this date.</p>}
@@ -418,7 +428,7 @@ export function DailyProductionPage({
         </section>
       </div>
 
-      <section className="operations-panel">
+      <section className="operations-panel operations-daily-history">
         <div className="operations-panel-heading">
           <div><h2>Production history</h2><p>Batch-level recipe, ingredient and cost snapshots.</p></div>
         </div>
@@ -469,13 +479,10 @@ export function DailyProductionPage({
               <button className="production-button" disabled={saving}>Save yield</button>
             </form>
             {canClose && <form className="production-form production-cancel-form sfh-dialog-form" onSubmit={(event) => void submitCancellation(event)}>
-              <h3>Cancel production / recover unused stock</h3>
-              <p>Enter only quantities that are genuinely unused and safe to return. Omitted ingredients are treated as consumed or wasted.</p>
-              {(selectedRecord.ingredients || []).map((ingredient) => <label key={ingredient.id}>{ingredient.ingredientName} recovery ({ingredient.unit})
-                <input type="number" min="0" max={asNumber(ingredient.quantityDeducted)} step="0.001" value={recoveryDraft[ingredient.id] || ''} onChange={(event) => setRecoveryDraft((draft) => ({ ...draft, [ingredient.id]: event.target.value }))} placeholder={`Max ${asNumber(ingredient.quantityDeducted)}`} />
-              </label>)}
+              <h3>Cancel production and restore stock</h3>
+              <p>All ingredient quantities recorded as deducted will be returned to stock, including wastage.</p>
               <label>Cancellation reason<input value={cancelReason} onChange={(event) => setCancelReason(capitalizeFirstLetter(event.target.value))} required maxLength={255} /></label>
-              <button className="production-button production-button-danger" disabled={saving}>Cancel batch and return listed stock</button>
+              <button className="production-button production-button-danger" disabled={saving}>Cancel batch and restore stock</button>
             </form>}
           </>}
         </section>
@@ -723,10 +730,14 @@ export function BillingPosPage({
           }} />
         </label>
         <label>Menu category
-          <select value={category} onChange={(event) => setCategory(event.target.value)}>
-            <option value="all">All categories</option>
-            {categories.map((name) => <option key={name} value={name}>{name}</option>)}
-          </select>
+          <AppSelect
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+            options={[
+              { value: 'all', label: 'All categories' },
+              ...categories.map((name) => ({ value: name, label: name })),
+            ]}
+          />
         </label>
         <button type="button" className="sfh-button sfh-button-secondary" onClick={resetAvailabilityFilters}>
           <Icon name="reset" size={14} /> Reset filters
@@ -818,19 +829,21 @@ export function BillingPosPage({
             <div className="operations-grand-total"><dt>Estimated total</dt><dd>{money(estimatedTotal)}</dd></div>
           </dl>
           <label>Payment method
-            <select
+            <AppSelect
               value={paymentMethod}
               disabled={settingsLoading || !appSettings}
               onChange={(event) => {
                 setPaymentMethod(event.target.value as PaymentMethod)
                 setTenderReceived(false)
               }}
-            >
-              {enabledPaymentMethods.map((method) => (
-                <option key={method} value={method}>{methodLabels[method]}</option>
-              ))}
-              {splitPaymentEnabled && <option value="split">Split payment</option>}
-            </select>
+              options={[
+                ...enabledPaymentMethods.map((method) => ({
+                  value: method,
+                  label: methodLabels[method],
+                })),
+                ...(splitPaymentEnabled ? [{ value: 'split', label: 'Split payment' }] : []),
+              ]}
+            />
           </label>
           {paymentMethod === 'split' && splitPaymentEnabled && (
             <div className="operations-split-payment">
@@ -840,17 +853,16 @@ export function BillingPosPage({
                   const position = index as 0 | 1
                   const otherMethod = splitMethods[(1 - index) as 0 | 1]
                   return <label key={position}>Tender {position + 1}
-                    <select
+                    <AppSelect
                       value={method}
                       onChange={(event) => {
                         updateSplitMethod(position, event.target.value as PaymentTender)
                         setTenderReceived(false)
                       }}
-                    >
-                      {enabledPaymentMethods
+                      options={enabledPaymentMethods
                         .filter((option) => option === method || option !== otherMethod)
-                        .map((option) => <option key={option} value={option}>{methodLabels[option]}</option>)}
-                    </select>
+                        .map((option) => ({ value: option, label: methodLabels[option] }))}
+                    />
                   </label>
                 })}
               </div>

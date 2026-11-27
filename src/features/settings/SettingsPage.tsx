@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { AdminLayout } from '../../layouts/AdminLayout'
+import { AppSelect } from '../../components/common/AppSelect'
 import { AutoDismissMessage } from '../../components/common/AutoDismissMessage/AutoDismissMessage'
 import { ApiLoadingIndicator } from '../../components/loaders/ApiLoadingIndicator'
 import type { AuthUser } from '../../types/auth.types'
@@ -312,16 +313,17 @@ export function SettingsPage({
                     </div>
                     <div className="settings-charge-fields">
                       <label>Calculation
-                        <select
+                        <AppSelect
                           value={charge.calculationType}
                           onChange={(event) => updateCharge(charge.id, {
                             calculationType: event.target.value as AdditionalChargeSetting['calculationType'],
                             amount: 0,
                           })}
-                        >
-                          <option value="fixed">Fixed amount</option>
-                          <option value="percentage">Percentage</option>
-                        </select>
+                          options={[
+                            { value: 'fixed', label: 'Fixed amount' },
+                            { value: 'percentage', label: 'Percentage' },
+                          ]}
+                        />
                       </label>
                       <label>{charge.calculationType === 'fixed' ? 'Amount (₹)' : 'Rate (%)'}
                         <input
@@ -380,7 +382,7 @@ export function SettingsPage({
               </div>
               <div className="settings-grid">
                 <label>Date format
-                  <select
+                  <AppSelect
                     value={settings.regional.dateFormat}
                     onChange={(event) => setSettings((current) => ({
                       ...current,
@@ -389,36 +391,38 @@ export function SettingsPage({
                         dateFormat: event.target.value as ApplicationSettings['regional']['dateFormat'],
                       },
                     }))}
-                  >
-                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                  </select>
+                    options={[
+                      { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
+                      { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
+                      { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
+                    ]}
+                  />
                 </label>
                 <label>Time format
-                  <select
+                  <AppSelect
                     value={settings.regional.timeFormat}
                     onChange={(event) => setSettings((current) => ({
                       ...current,
                       regional: { ...current.regional, timeFormat: event.target.value as '12h' | '24h' },
                     }))}
-                  >
-                    <option value="12h">12-hour</option>
-                    <option value="24h">24-hour</option>
-                  </select>
+                    options={[
+                      { value: '12h', label: '12-hour' },
+                      { value: '24h', label: '24-hour' },
+                    ]}
+                  />
                 </label>
                 <label>Time zone
-                  <select
+                  <AppSelect
                     value={settings.regional.timeZone}
                     onChange={(event) => setSettings((current) => ({
                       ...current,
                       regional: { ...current.regional, timeZone: event.target.value },
                     }))}
-                  >
-                    {['Asia/Kolkata', 'Asia/Dubai', 'Europe/London', 'America/New_York', 'UTC'].map((zone) => (
-                      <option key={zone} value={zone}>{zone.replace('_', ' ')}</option>
-                    ))}
-                  </select>
+                    options={['Asia/Kolkata', 'Asia/Dubai', 'Europe/London', 'America/New_York', 'UTC'].map((zone) => ({
+                      value: zone,
+                      label: zone.replace('_', ' '),
+                    }))}
+                  />
                 </label>
               </div>
               <p className="settings-preview">Preview: <strong>{formatTimestamp(new Date(), settings.regional)}</strong></p>

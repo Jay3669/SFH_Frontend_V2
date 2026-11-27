@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Alert, Avatar, Button, Card, CardContent, Chip, Dialog, DialogActions,
-  DialogContent, DialogTitle, MenuItem, Table, TableBody, TableCell, TableHead,
+  DialogContent, DialogTitle, Table, TableBody, TableCell, TableHead,
   TablePagination, TableRow, TextField,
 } from '@mui/material'
 import { ArrowLeft, ArrowRight, BadgeIndianRupee, BriefcaseBusiness, CalendarDays, Check, CircleCheck, Download, MapPin, Plus, Save, ShieldCheck, UserRound, UsersRound, WalletCards } from 'lucide-react'
 import { AdminLayout } from '../../layouts/AdminLayout'
+import { AppSelect } from '../../components/common/AppSelect'
 import { ConfirmDialog } from '../../components/dialogs/ConfirmDialog'
 import { ApiLoadingIndicator } from '../../components/loaders/ApiLoadingIndicator'
 import { AutoDismissMessage } from '../../components/common/AutoDismissMessage/AutoDismissMessage'
@@ -161,8 +162,18 @@ function StaffList({ staff, roles, reload, setNotice, setError }: {
     <Card className="staff-table-card"><CardContent>
       <div className="staff-toolbar-mui">
         <TextField size="small" label="Search staff" value={search} onChange={(event) => setSearch(event.target.value)} />
-        <TextField select size="small" label="Role" value={role} onChange={(event) => setRole(event.target.value)}><MenuItem value="all">All roles</MenuItem><MenuItem value="manager">Manager</MenuItem><MenuItem value="cashier">Cashier</MenuItem><MenuItem value="employee">Employee</MenuItem></TextField>
-        <TextField select size="small" label="Status" value={status} onChange={(event) => setStatus(event.target.value)}><MenuItem value="all">All statuses</MenuItem><MenuItem value="active">Active</MenuItem><MenuItem value="on_leave">On leave</MenuItem><MenuItem value="inactive">Inactive</MenuItem></TextField>
+        <AppSelect size="small" label="Role" value={role} onChange={(event) => setRole(event.target.value)} options={[
+          { value: 'all', label: 'All roles' },
+          { value: 'manager', label: 'Manager' },
+          { value: 'cashier', label: 'Cashier' },
+          { value: 'employee', label: 'Employee' },
+        ]} />
+        <AppSelect size="small" label="Status" value={status} onChange={(event) => setStatus(event.target.value)} options={[
+          { value: 'all', label: 'All statuses' },
+          { value: 'active', label: 'Active' },
+          { value: 'on_leave', label: 'On leave' },
+          { value: 'inactive', label: 'Inactive' },
+        ]} />
         <Button variant="outlined" startIcon={<Download size={16} />} onClick={exportCsv}>Export CSV</Button>
       </div>
       <Table size="small" className="staff-table-mui"><TableHead><TableRow><TableCell>Staff member</TableCell><TableCell>Employee ID</TableCell><TableCell>Phone</TableCell><TableCell>Role</TableCell><TableCell>Status</TableCell><TableCell align="right">Actions</TableCell></TableRow></TableHead>
@@ -273,8 +284,16 @@ function EditDialog({ member, onClose, reload, setNotice, setError }: {
       <form className="sfh-dialog-form" onSubmit={(event) => void submit(event)}><DialogContent className="staff-dialog-grid">
         <TextField label="First name" value={form.firstName} onChange={(event) => setForm({ ...form, firstName: event.target.value })} required />
         <TextField label="Last name" value={form.lastName} onChange={(event) => setForm({ ...form, lastName: event.target.value })} required />
-        <TextField select label="Role" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as StaffRole })}><MenuItem value="manager">Manager</MenuItem><MenuItem value="cashier">Cashier</MenuItem><MenuItem value="employee">Employee</MenuItem></TextField>
-        <TextField select label="Status" value={form.employmentStatus} onChange={(event) => setForm({ ...form, employmentStatus: event.target.value as StaffEmploymentStatus })}><MenuItem value="active">Active</MenuItem><MenuItem value="on_leave">On leave</MenuItem><MenuItem value="inactive">Inactive</MenuItem></TextField>
+        <AppSelect label="Role" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as StaffRole })} options={[
+          { value: 'manager', label: 'Manager' },
+          { value: 'cashier', label: 'Cashier' },
+          { value: 'employee', label: 'Employee' },
+        ]} />
+        <AppSelect label="Status" value={form.employmentStatus} onChange={(event) => setForm({ ...form, employmentStatus: event.target.value as StaffEmploymentStatus })} options={[
+          { value: 'active', label: 'Active' },
+          { value: 'on_leave', label: 'On leave' },
+          { value: 'inactive', label: 'Inactive' },
+        ]} />
         <TextField label="Joining date" type="date" value={form.joiningDate} onChange={(event) => setForm({ ...form, joiningDate: event.target.value })} />
       </DialogContent><DialogActions><Button variant="outlined" onClick={onClose}>Cancel</Button><Button variant="contained" type="submit">Save</Button></DialogActions></form>
     </Dialog>
@@ -301,7 +320,10 @@ function AssignmentDialog({ member, roles, onClose, reload, setNotice, setError 
   }
   return (
     <Dialog open fullWidth maxWidth="md" className="sfh-form-dialog" onClose={onClose}><DialogTitle>Assigned roles — {member.firstName} {member.lastName}</DialogTitle><DialogContent>
-      <div className="role-assignment-form"><TextField select label="Role" value={roleId} onChange={(event) => setRoleId(event.target.value)}>{roles.map((role) => <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>)}</TextField><TextField label="Profit %" type="number" value={percentage} onChange={(event) => setPercentage(event.target.value)} /><TextField label="Effective from" type="date" value={today()} disabled /><Button variant="contained" onClick={() => void add()}><Plus size={16} /> Add</Button></div>
+      <div className="role-assignment-form"><AppSelect label="Role" value={roleId} onChange={(event) => setRoleId(event.target.value)} displayEmpty options={[
+        { value: '', label: 'Select a role', disabled: true },
+        ...roles.map((role) => ({ value: role.id, label: role.name })),
+      ]} /><TextField label="Profit %" type="number" value={percentage} onChange={(event) => setPercentage(event.target.value)} /><TextField label="Effective from" type="date" value={today()} disabled /><Button variant="contained" onClick={() => void add()}><Plus size={16} /> Add</Button></div>
       {loading ? (
         <ApiLoadingIndicator label="Loading role assignments…" compact />
       ) : (
@@ -515,7 +537,11 @@ function Onboarding({ roles, onClose, onCreated, setError }: {
             <div className="staff-form-grid-mui">
               <TextField label="First name" value={form.firstName} onChange={(event) => setField('firstName', event.target.value)} required />
               <TextField label="Last name" value={form.lastName} onChange={(event) => setField('lastName', event.target.value)} required />
-              <TextField select label="Gender" value={form.gender} onChange={(event) => setField('gender', event.target.value)}><MenuItem value="female">Female</MenuItem><MenuItem value="male">Male</MenuItem><MenuItem value="other">Other</MenuItem></TextField>
+              <AppSelect label="Gender" value={form.gender} onChange={(event) => setField('gender', event.target.value)} options={[
+                { value: 'female', label: 'Female' },
+                { value: 'male', label: 'Male' },
+                { value: 'other', label: 'Other' },
+              ]} />
               <TextField label="Date of birth" type="date" value={form.dob} onChange={(event) => setField('dob', event.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
               <TextField label="Email address" type="email" value={form.email} onChange={(event) => setField('email', event.target.value)} />
               <TextField label="Phone number" value={form.phone} onChange={(event) => setField('phone', event.target.value)} />
@@ -544,8 +570,16 @@ function Onboarding({ roles, onClose, onCreated, setError }: {
             <div className="staff-form-grid-mui">
               <TextField label="Employee ID" value={form.employeeId} onChange={(event) => setField('employeeId', event.target.value)} />
               <TextField label="Joining date" type="date" value={form.joiningDate} onChange={(event) => setField('joiningDate', event.target.value)} required slotProps={{ inputLabel: { shrink: true } }} />
-              <TextField select label="Employment type" value={form.employmentType} onChange={(event) => setField('employmentType', event.target.value)}><MenuItem value="full_time">Full-time</MenuItem><MenuItem value="part_time">Part-time</MenuItem><MenuItem value="temporary">Temporary</MenuItem><MenuItem value="contract">Contract</MenuItem></TextField>
-              <TextField select label="Employment status" value={form.status} onChange={(event) => setField('status', event.target.value)}><MenuItem value="active">Active</MenuItem><MenuItem value="on_leave">On leave</MenuItem></TextField>
+              <AppSelect label="Employment type" value={form.employmentType} onChange={(event) => setField('employmentType', event.target.value)} options={[
+                { value: 'full_time', label: 'Full-time' },
+                { value: 'part_time', label: 'Part-time' },
+                { value: 'temporary', label: 'Temporary' },
+                { value: 'contract', label: 'Contract' },
+              ]} />
+              <AppSelect label="Employment status" value={form.status} onChange={(event) => setField('status', event.target.value)} options={[
+                { value: 'active', label: 'Active' },
+                { value: 'on_leave', label: 'On leave' },
+              ]} />
             </div>
           </section>
         )}
@@ -638,7 +672,12 @@ function DailyView({ staff, roles, calculations, reload, setNotice, setError }: 
     <Card className="staff-table-card"><CardContent><Table size="small" className="staff-table-mui"><TableHead><TableRow><TableCell>Employee</TableCell><TableCell>Role</TableCell><TableCell>Work status</TableCell><TableCell>NET basis</TableCell><TableCell>Total allocation</TableCell><TableCell>Approval</TableCell></TableRow></TableHead><TableBody>{staff.filter((member) => member.isActive).map((member) => {
       const details = selected?.details?.filter((item) => item.staffId === member.id) ?? []
       const total = details.reduce((sum, item) => sum + Number(item.calculatedShare || 0), 0)
-      return <TableRow key={member.id}><TableCell><div className="staff-person"><Avatar>{member.firstName[0]}{member.lastName[0]}</Avatar><div><strong>{member.firstName} {member.lastName}</strong><span>{member.profile?.employeeId || '—'}</span></div></div></TableCell><TableCell>{roles.find((role) => role.id === member.role)?.name || roleLabel[member.role]}</TableCell><TableCell><TextField select size="small" value={statuses[member.id] ?? 'present'} onChange={(event) => setStatuses((current) => ({ ...current, [member.id]: event.target.value }))}><MenuItem value="present">Present</MenuItem><MenuItem value="absent">Absent</MenuItem><MenuItem value="leave">Leave</MenuItem><MenuItem value="half_day">Half day</MenuItem></TextField></TableCell><TableCell>{selected ? money(selected.eligibleNetProfit) : '—'}</TableCell><TableCell>{selected ? money(total) : '—'}</TableCell><TableCell><Chip size="small" label={selected?.status.replaceAll('_', ' ') || 'Not submitted'} /></TableCell></TableRow>
+      return <TableRow key={member.id}><TableCell><div className="staff-person"><Avatar>{member.firstName[0]}{member.lastName[0]}</Avatar><div><strong>{member.firstName} {member.lastName}</strong><span>{member.profile?.employeeId || '—'}</span></div></div></TableCell><TableCell>{roles.find((role) => role.id === member.role)?.name || roleLabel[member.role]}</TableCell><TableCell><AppSelect size="small" value={statuses[member.id] ?? 'present'} onChange={(event) => setStatuses((current) => ({ ...current, [member.id]: event.target.value }))} options={[
+        { value: 'present', label: 'Present' },
+        { value: 'absent', label: 'Absent' },
+        { value: 'leave', label: 'Leave' },
+        { value: 'half_day', label: 'Half day' },
+      ]} /></TableCell><TableCell>{selected ? money(selected.eligibleNetProfit) : '—'}</TableCell><TableCell>{selected ? money(total) : '—'}</TableCell><TableCell><Chip size="small" label={selected?.status.replaceAll('_', ' ') || 'Not submitted'} /></TableCell></TableRow>
     })}</TableBody></Table></CardContent></Card>
   </>
 }
@@ -656,7 +695,12 @@ function ProfitView({ calculations, reload, setNotice, setError }: {
   async function approve(id: string) { try { await approveProfitSharing(id); setNotice('Allocation approved.'); await reload() } catch (error) { setError(errorText(error)) } }
   async function reject() { if (!rejectId) return; try { await rejectProfitSharing(rejectId, remarks); setRejectId(null); setNotice('Allocation rejected.'); await reload() } catch (error) { setError(errorText(error)) } }
   return <>
-    <section className="staff-filter-card"><TextField label="Business date" type="date" value={date} onChange={(event) => setDate(event.target.value)} /><TextField select label="Status" value={status} onChange={(event) => setStatus(event.target.value)}><MenuItem value="all">All statuses</MenuItem><MenuItem value="pending_approval">Pending</MenuItem><MenuItem value="approved">Approved</MenuItem><MenuItem value="rejected">Rejected</MenuItem></TextField></section>
+    <section className="staff-filter-card"><TextField label="Business date" type="date" value={date} onChange={(event) => setDate(event.target.value)} /><AppSelect label="Status" value={status} onChange={(event) => setStatus(event.target.value)} options={[
+      { value: 'all', label: 'All statuses' },
+      { value: 'pending_approval', label: 'Pending' },
+      { value: 'approved', label: 'Approved' },
+      { value: 'rejected', label: 'Rejected' },
+    ]} /></section>
     <Card className="staff-table-card"><CardContent><Table size="small" className="staff-table-mui"><TableHead><TableRow><TableCell>Date</TableCell><TableCell>NET profit</TableCell><TableCell>Allocation</TableCell><TableCell>Staff share</TableCell><TableCell>Status</TableCell><TableCell align="right">Actions</TableCell></TableRow></TableHead><TableBody>{filtered.map((item) => <TableRow key={item.id}><TableCell>{item.businessDate}</TableCell><TableCell>{money(item.eligibleNetProfit)}</TableCell><TableCell>{Number(item.totalAllocationPercentage).toFixed(4)}%</TableCell><TableCell>{money(item.totalProfitShare)}</TableCell><TableCell><Chip size="small" color={item.status === 'approved' ? 'success' : item.status === 'rejected' ? 'error' : 'warning'} label={item.status.replaceAll('_', ' ')} /></TableCell><TableCell align="right"><Button size="small" onClick={() => setDetails(item)}>Details</Button>{item.status === 'pending_approval' && <><Button size="small" color="success" onClick={() => void approve(item.id)}>Approve</Button><Button size="small" color="error" onClick={() => setRejectId(item.id)}>Reject</Button></>}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
     <Dialog open={Boolean(details)} fullWidth maxWidth="sm" onClose={() => setDetails(null)}><DialogTitle>Calculation details</DialogTitle><DialogContent>{details && <><div className="profit-breakdown"><div><span>NET profit</span><strong>{money(details.eligibleNetProfit)}</strong></div><div><span>Staff share</span><strong>{money(details.totalProfitShare)}</strong></div></div>{details.details?.map((row) => <div className="profit-detail-row" key={row.id}><span>{row.roleId}</span><strong>{Number(row.appliedPercentage).toFixed(4)}%</strong><strong>{money(row.calculatedShare)}</strong></div>)}</>}</DialogContent><DialogActions><Button onClick={() => setDetails(null)}>Close</Button></DialogActions></Dialog>
     <Dialog open={Boolean(rejectId)} maxWidth="xs" fullWidth className="sfh-form-dialog" onClose={() => setRejectId(null)}><DialogTitle>Reject allocation</DialogTitle><DialogContent><TextField fullWidth multiline minRows={3} label="Reason" value={remarks} onChange={(event) => setRemarks(event.target.value)} /></DialogContent><DialogActions><Button variant="outlined" onClick={() => setRejectId(null)}>Cancel</Button><Button variant="contained" color="error" disabled={!remarks.trim()} onClick={() => void reject()}>Reject</Button></DialogActions></Dialog>
@@ -695,7 +739,20 @@ function PaymentsView({ staff, calculations, setNotice, setError }: {
       const member = staff.find((staffMember) => staffMember.id === detail.staffId)
       return <TableRow key={detail.id}><TableCell>{item.businessDate}</TableCell><TableCell>{member ? `${member.firstName} ${member.lastName}` : detail.staffId}</TableCell><TableCell>{money(detail.calculatedShare)}</TableCell><TableCell><Chip size="small" color="warning" label="Pending payment" /></TableCell><TableCell align="right"><Button size="small" onClick={() => { setCalculationId(item.id); setDetailId(detail.id); setAmount(String(detail.calculatedShare)); setOpen(true) }}>Pay</Button></TableCell></TableRow>
     })}</TableBody></Table></CardContent></Card>
-    <Dialog open={open} fullWidth maxWidth="sm" className="sfh-form-dialog" onClose={() => setOpen(false)}><DialogTitle>Record staff payment</DialogTitle><DialogContent className="staff-dialog-grid"><TextField select label="Approved allocation" value={calculationId} onChange={(event) => { setCalculationId(event.target.value); setDetailId('') }}>{approved.map((item) => <MenuItem key={item.id} value={item.id}>{item.businessDate} — {money(item.totalProfitShare)}</MenuItem>)}</TextField><TextField select label="Employee payable" value={detailId} onChange={(event) => setDetailId(event.target.value)}>{calculation?.details?.map((item) => <MenuItem key={item.id} value={item.id}>{staff.find((member) => member.id === item.staffId)?.firstName || item.staffId} — {money(item.calculatedShare)}</MenuItem>)}</TextField><TextField label="Payment date" type="date" value={date} onChange={(event) => setDate(event.target.value)} /><TextField select label="Method" value={method} onChange={(event) => setMethod(event.target.value as typeof method)}><MenuItem value="cash">Cash</MenuItem><MenuItem value="upi">UPI</MenuItem><MenuItem value="bank_transfer">Bank transfer</MenuItem></TextField><TextField label="Amount" type="number" value={amount} onChange={(event) => setAmount(event.target.value)} /></DialogContent><DialogActions><Button variant="outlined" onClick={() => setOpen(false)}>Cancel</Button><Button variant="contained" onClick={() => void save()}>Record payment</Button></DialogActions></Dialog>
+    <Dialog open={open} fullWidth maxWidth="sm" className="sfh-form-dialog" onClose={() => setOpen(false)}><DialogTitle>Record staff payment</DialogTitle><DialogContent className="staff-dialog-grid"><AppSelect label="Approved allocation" value={calculationId} onChange={(event) => { setCalculationId(event.target.value); setDetailId('') }} displayEmpty options={[
+      { value: '', label: 'Select an approved allocation', disabled: true },
+      ...approved.map((item) => ({ value: item.id, label: `${item.businessDate} — ${money(item.totalProfitShare)}` })),
+    ]} /><AppSelect label="Employee payable" value={detailId} onChange={(event) => setDetailId(event.target.value)} displayEmpty options={[
+      { value: '', label: 'Select an employee payable', disabled: true },
+      ...(calculation?.details ?? []).map((item) => ({
+        value: item.id,
+        label: `${staff.find((member) => member.id === item.staffId)?.firstName || item.staffId} — ${money(item.calculatedShare)}`,
+      })),
+    ]} /><TextField label="Payment date" type="date" value={date} onChange={(event) => setDate(event.target.value)} /><AppSelect label="Method" value={method} onChange={(event) => setMethod(event.target.value as typeof method)} options={[
+      { value: 'cash', label: 'Cash' },
+      { value: 'upi', label: 'UPI' },
+      { value: 'bank_transfer', label: 'Bank transfer' },
+    ]} /><TextField label="Amount" type="number" value={amount} onChange={(event) => setAmount(event.target.value)} /></DialogContent><DialogActions><Button variant="outlined" onClick={() => setOpen(false)}>Cancel</Button><Button variant="contained" onClick={() => void save()}>Record payment</Button></DialogActions></Dialog>
   </>
 }
 
@@ -708,7 +765,10 @@ function ReportsView({ staff, calculations }: { staff: StaffMember[]; calculatio
     downloadCsv(rows, `staff-${type}-report.csv`)
   }
   return <>
-    <section className="staff-filter-card"><TextField select label="Report" value={type} onChange={(event) => setType(event.target.value)}><MenuItem value="profit">Staff profit report</MenuItem><MenuItem value="directory">Staff directory</MenuItem></TextField><Button variant="contained" startIcon={<Download size={16} />} onClick={exportReport}>Export CSV</Button></section>
+    <section className="staff-filter-card"><AppSelect label="Report" value={type} onChange={(event) => setType(event.target.value)} options={[
+      { value: 'profit', label: 'Staff profit report' },
+      { value: 'directory', label: 'Staff directory' },
+    ]} /><Button variant="contained" startIcon={<Download size={16} />} onClick={exportReport}>Export CSV</Button></section>
     <section className="staff-report-grid"><Card><CardContent><span>Approved profit</span><strong>{money(calculations.filter((item) => item.status === 'approved').reduce((sum, item) => sum + Number(item.totalProfitShare), 0))}</strong></CardContent></Card><Card><CardContent><span>Pending approvals</span><strong>{calculations.filter((item) => item.status === 'pending_approval').length}</strong></CardContent></Card><Card><CardContent><span>Active staff</span><strong>{staff.filter((member) => member.isActive).length}</strong></CardContent></Card></section>
   </>
 }

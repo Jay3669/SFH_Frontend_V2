@@ -12,6 +12,7 @@ export const routes = {
   reports: '/admin/reports',
   profitSharing: '/admin/profit-sharing',
   staffManagement: '/admin/staff',
+  branchManagement: '/admin/branches',
   staffList: '/admin/staff/list',
   staffCreate: '/admin/staff/create',
   staffRoles: '/admin/staff/roles',

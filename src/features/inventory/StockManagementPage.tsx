@@ -519,7 +519,7 @@ function ItemsTable({
             <th>Expiry date</th>
             <th>On hand</th>
             <th>Reorder at</th>
-            <th>Weighted avg cost</th>
+            <th>Weighted avg cost / unit</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
@@ -550,7 +550,7 @@ function ItemsTable({
                 <td>{item.expiryDate || '—'}</td>
                 <td className="stock-quantity">{quantityText(item.quantity, item.unit)}</td>
                 <td>{quantityText(item.reorderLevel, item.unit)}</td>
-                <td>{moneyText(item.unitCost)}</td>
+                <td>{moneyText(item.unitCost)} / {item.unit}</td>
                 <td><span className={`stock-status stock-status-${status}`}>{status === 'healthy' ? 'In stock' : status === 'low' ? 'Low stock' : 'Out of stock'}</span></td>
                 <td>
                   <div className="stock-row-actions">
@@ -608,7 +608,7 @@ function MovementTable({ movements }: { movements: StockMovement[] }) {
     <div className="sfh-table-wrap stock-table-wrap">
       <table className="sfh-table stock-table">
         <thead>
-          <tr><th>Date</th><th>Item</th><th>Movement</th><th>Change</th><th>Purchase unit cost</th><th>Balance</th><th>Reason</th></tr>
+          <tr><th>Date</th><th>Item</th><th>Movement</th><th>Change</th><th>Unit cost</th><th>Balance</th><th>Reason</th></tr>
         </thead>
         <tbody>
           {movements.map((movement) => {
@@ -625,7 +625,7 @@ function MovementTable({ movements }: { movements: StockMovement[] }) {
                 <td className={change < 0 ? 'stock-change-negative' : 'stock-change-positive'}>
                   {change > 0 ? '+' : ''}{quantityText(change, movement.unit)}
                 </td>
-                <td>{movement.unitCost === null ? '—' : moneyText(movement.unitCost)}</td>
+                <td>{movement.unitCost === null ? '—' : `${moneyText(movement.unitCost)} / ${movement.unit}`}</td>
                 <td>{quantityText(movement.afterQuantity, movement.unit)}</td>
                 <td>{movement.reason}</td>
               </tr>
@@ -856,7 +856,7 @@ function MovementDialog({
 }) {
   const [type, setType] = useState<StockMovementInput['type']>('in')
   const [quantity, setQuantity] = useState('')
-  const [unitCost, setUnitCost] = useState('')
+  const [totalCost, setTotalCost] = useState('')
   const [reason, setReason] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
@@ -867,7 +867,7 @@ function MovementDialog({
     setIsSaving(true)
     try {
       const input: StockMovementInput = type === 'in'
-        ? { type, quantity: Number(quantity), unitCost: Number(unitCost), reason: reason.trim() }
+        ? { type, quantity: Number(quantity), totalCost: Number(totalCost), reason: reason.trim() }
         : { type, quantity: Number(quantity), reason: reason.trim() }
       await onSave(item, input)
     } catch (requestError) {
@@ -909,14 +909,14 @@ function MovementDialog({
           />
         </FormField>
         {type === 'in' && (
-          <FormField label="Purchase price per unit (₹)">
+          <FormField label="Total purchase cost (₹)">
             <AppTextField
-              placeholder="Purchase price per unit (₹)"
+              placeholder="Total cost of the received quantity"
               type="number"
               slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
               required
-              value={unitCost}
-              onChange={(event) => setUnitCost(event.target.value)}
+              value={totalCost}
+              onChange={(event) => setTotalCost(event.target.value)}
             />
           </FormField>
         )}

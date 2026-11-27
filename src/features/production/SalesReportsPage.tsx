@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
+import { AppSelect } from '../../components/common/AppSelect'
 import { Icon } from '../../components/common/Icon/Icon'
 import { AutoDismissMessage } from '../../components/common/AutoDismissMessage/AutoDismissMessage'
 import { ApiLoadingIndicator } from '../../components/loaders/ApiLoadingIndicator'
@@ -238,13 +239,56 @@ export function SalesReportsPage({
           <form className="operations-filters" onSubmit={(event) => void loadReport(event)}>
             <label>From<input type="date" value={from} onChange={(event) => setFrom(event.target.value)} required /></label>
             <label>To<input type="date" value={to} onChange={(event) => setTo(event.target.value)} required /></label>
-            <label>Menu category<select value={categoryId} onChange={(event) => {
-              setCategoryId(event.target.value)
-              setMenuItemId('')
-            }}><option value="">All categories</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
-            <label>Menu item<select value={menuItemId} onChange={(event) => setMenuItemId(event.target.value)}><option value="">All items</option>{filteredMenuItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-            <label>Payment method<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as typeof paymentMethod)}><option value="all">All methods</option><option value="cash">Cash</option><option value="upi">UPI</option><option value="card">Card</option><option value="split">Split</option></select></label>
-            <label>Payment status<select value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value as typeof paymentStatus)}><option value="all">All statuses</option><option value="completed">Completed</option><option value="failed">Failed</option><option value="cancelled">Cancelled</option></select></label>
+            <label>Menu category
+              <AppSelect
+                value={categoryId}
+                displayEmpty
+                onChange={(event) => {
+                  setCategoryId(event.target.value)
+                  setMenuItemId('')
+                }}
+                options={[
+                  { value: '', label: 'All categories' },
+                  ...categories.map((category) => ({ value: category.id, label: category.name })),
+                ]}
+              />
+            </label>
+            <label>Menu item
+              <AppSelect
+                value={menuItemId}
+                displayEmpty
+                onChange={(event) => setMenuItemId(event.target.value)}
+                options={[
+                  { value: '', label: 'All items' },
+                  ...filteredMenuItems.map((item) => ({ value: item.id, label: item.name })),
+                ]}
+              />
+            </label>
+            <label>Payment method
+              <AppSelect
+                value={paymentMethod}
+                onChange={(event) => setPaymentMethod(event.target.value as typeof paymentMethod)}
+                options={[
+                  { value: 'all', label: 'All methods' },
+                  { value: 'cash', label: 'Cash' },
+                  { value: 'upi', label: 'UPI' },
+                  { value: 'card', label: 'Card' },
+                  { value: 'split', label: 'Split' },
+                ]}
+              />
+            </label>
+            <label>Payment status
+              <AppSelect
+                value={paymentStatus}
+                onChange={(event) => setPaymentStatus(event.target.value as typeof paymentStatus)}
+                options={[
+                  { value: 'all', label: 'All statuses' },
+                  { value: 'completed', label: 'Completed' },
+                  { value: 'failed', label: 'Failed' },
+                  { value: 'cancelled', label: 'Cancelled' },
+                ]}
+              />
+            </label>
             <button className="sfh-button" disabled={loading}>{loading ? 'Loading…' : 'Apply filters'}</button>
             <button type="button" className="sfh-button sfh-button-secondary" onClick={resetReportFilters}>
               <Icon name="reset" size={14} /> Reset filters

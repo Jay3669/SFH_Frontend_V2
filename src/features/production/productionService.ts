@@ -219,7 +219,6 @@ export function cancelProduction(
   input: {
     reason: string
     notes?: string
-    recoveries?: Array<{ productionIngredientId: string; quantityRecovered: number }>
   },
 ) {
   return authenticatedApiRequest<ProductionApiResponse<ProductionRecord>>(

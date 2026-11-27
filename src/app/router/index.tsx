@@ -1,12 +1,14 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { DashboardPage } from '../../features/dashboard/DashboardPage'
 import { StockManagementPage } from '../../features/inventory/StockManagementPage'
-import { ProductionManagementPage } from '../../features/production/ProductionManagementPage'
+import { MenuManagementPage } from '../../features/menuManagement/MenuManagementPage'
+import { RecipesPage } from '../../features/recipes/RecipesPage'
 import { BillingPosPage, DailyProductionPage } from '../../features/production/ProductionOperationsPage'
 import { SalesReportsPage } from '../../features/production/SalesReportsPage'
 import { ProfitSharingPage } from '../../features/profitSharing/ProfitSharingPage'
 import { SettingsPage } from '../../features/settings/SettingsPage'
 import { StaffManagementPage } from '../../features/staff/StaffManagementPage'
+import { BranchManagementPage } from '../../features/branches/BranchManagementPage'
 import { LoginPage } from '../../features/auth/LoginPage'
 import { AuthLayout } from '../../layouts/AuthLayout/AuthLayout'
 import { useAuth } from '../../hooks/useAuth'
@@ -46,7 +48,7 @@ export function AppRouter() {
           path={routes.menuManagement}
           element={
             <RoleBasedRoute allowedRoles={['admin', 'manager', 'employee']}>
-              {user && <ProductionManagementPage user={user} onLogout={signOut} />}
+              {user && <MenuManagementPage user={user} onLogout={signOut} />}
             </RoleBasedRoute>
           }
         />
@@ -54,7 +56,7 @@ export function AppRouter() {
           path={routes.recipeManagement}
           element={
             <RoleBasedRoute allowedRoles={['admin', 'manager', 'employee']}>
-              {user && <ProductionManagementPage user={user} onLogout={signOut} view="recipes" />}
+              {user && <RecipesPage user={user} onLogout={signOut} />}
             </RoleBasedRoute>
           }
         />
@@ -103,6 +105,14 @@ export function AppRouter() {
           element={
             <RoleBasedRoute allowedRoles={['admin']}>
               {user && <StaffManagementPage user={user} onLogout={signOut} />}
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path={routes.branchManagement}
+          element={
+            <RoleBasedRoute allowedRoles={['admin']}>
+              {user && <BranchManagementPage user={user} onLogout={signOut} />}
             </RoleBasedRoute>
           }
         />

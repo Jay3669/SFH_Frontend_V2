@@ -79,7 +79,7 @@ export type StockCategoryInput = {
 }
 
 export type StockMovementInput =
-  | { type: 'in'; quantity: number; unitCost: number; reason: string }
+  | { type: 'in'; quantity: number; totalCost: number; reason: string }
   | { type: 'out' | 'count'; quantity: number; reason: string }
 
 export type ApiResponse<T> = {

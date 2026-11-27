@@ -17,6 +17,7 @@ export const apiEndpoints = {
   },
   users: '/admin/users',
   staff: '/admin/staff',
+  branches: '/admin/branches',
   customers: '/admin/customers',
   permissions: '/admin/permissions',
   rolePermissions: '/admin/roles/permissions',

@@ -2,7 +2,7 @@ import { Logo } from '../../../components/common/Logo/Logo'
 import { NavLink } from 'react-router-dom'
 import type { UserRole } from '../../../types/auth.types'
 import { dashboardPath, routes } from '../../../app/router/routes'
-import { Users } from 'lucide-react'
+import { Building2, Users } from 'lucide-react'
 
 export function Sidebar({ userRole, permissions }: { userRole: UserRole; permissions: string[] }) {
     const can = (permission: string) =>
@@ -72,6 +72,14 @@ export function Sidebar({ userRole, permissions }: { userRole: UserRole; permiss
                     to={routes.salesReports}
                 >
                     <span className="side-icon">▥</span> Reports
+                </NavLink>
+            )}
+            {userRole === 'admin' && (
+                <NavLink
+                    className={({ isActive }) => `side-link${isActive ? ' side-link-active' : ''}`}
+                    to={routes.branchManagement}
+                >
+                    <Building2 size={17} className="side-icon" /> Branch management
                 </NavLink>
             )}
             {userRole === 'admin' && (

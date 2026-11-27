@@ -3,6 +3,7 @@ import { appConfig } from '../../config/app.config'
 import { apiEndpoints } from './apiEndpoints'
 import { getAuthSessionId } from '../auth/authSession'
 import { readSessionValue, writeSessionValue } from '../storage/sessionStorage'
+import { activeBranchStorageKey } from '../storage/branchStorage'
 
 export const sessionExpiredEvent = 'sfh:session-expired'
 export const accessTokenRefreshedEvent = 'sfh:access-token-refreshed'
@@ -251,6 +252,10 @@ async function renewAccessToken(token: string, sessionId: string): Promise<strin
 function requestWithToken<T>(path: string, options: RequestInit, token: string) {
   const headers = new Headers(options.headers)
   headers.set('Authorization', `Bearer ${token}`)
+  if (typeof window !== 'undefined') {
+    const branchId = window.localStorage.getItem(activeBranchStorageKey)
+    if (branchId) headers.set('X-Branch-Id', branchId)
+  }
   return apiRequest<T>(path, { ...options, headers })
 }
 

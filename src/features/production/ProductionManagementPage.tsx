@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Dialog, MenuItem as MuiMenuItem, TextField } from "@mui/material";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { Dialog } from "@mui/material";
+import {
+    Archive,
+    ArrowDown,
+    ArrowUp,
+    ChefHat,
+    Clock3,
+    Leaf,
+    Package,
+    Search,
+    Sparkles,
+    Utensils,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { Icon } from "../../components/common/Icon/Icon";
 import { AutoDismissMessage } from "../../components/common/AutoDismissMessage/AutoDismissMessage";
@@ -386,9 +397,8 @@ export function ProductionManagementPage({
     function startNewRecipe() {
         setError("");
         setEditingRecipe(null);
-        const firstMenuItem = activeMenuItems[0];
-        setRecipeName(firstMenuItem?.name || "");
-        setRecipeMenuItemId(firstMenuItem?.id || "");
+        setRecipeName("");
+        setRecipeMenuItemId("");
         setBaseQuantity("1");
         setBaseUnit("kg");
         setExpectedPlates("1");
@@ -709,21 +719,21 @@ export function ProductionManagementPage({
             sectionTitle={isMenuView ? "Menu Management" : "Recipes"}
             onLogout={onLogout}
         >
-            <div className="production-page">
-                <div className="production-heading">
+            <div className={`production-page${isMenuView ? "" : " recipes-page"}`}>
+                <div className={`production-heading${isMenuView ? "" : " recipes-page-heading"}`}>
                     <div>
                         <p className="eyebrow">
-                            {isMenuView ? "MENU MANAGEMENT" : "KITCHEN OPERATIONS"}
+                            {isMenuView ? "MENU MANAGEMENT" : "CULINARY WORKSPACE"}
                         </p>
-                        <h2>{isMenuView ? "Menu Management" : "Recipes"}</h2>
-                        <p className="production-subtitle">
+                        {isMenuView ? <h2>Menu Management</h2> : <h1>Recipes</h1>}
+                        <p className={isMenuView ? "production-subtitle" : "recipes-page-subtitle"}>
                             {isMenuView
                                 ? "Manage menu categories and the dishes available to your customers."
                                 : "Create recipes, manage versions, and connect dishes with their ingredients."}
                         </p>
                     </div>
                     <button
-                        className="production-button production-button-secondary"
+                        className={`production-button production-button-secondary${isMenuView ? "" : " recipes-refresh-button"}`}
                         onClick={refresh}
                         disabled={loading || saving}
                     >
@@ -752,33 +762,32 @@ export function ProductionManagementPage({
                     </AutoDismissMessage>
                 )}
 
-                <nav
-                    className="production-tabs"
-                    aria-label={isMenuView ? "Menu management" : "Recipe management"}
-                >
-                    {tabs.map(([key, label]) => (
-                        <button
-                            key={key}
-                            type="button"
-                            className={
-                                tab === key ? "production-tab active" : "production-tab"
-                            }
-                            aria-selected={tab === key}
-                            role="tab"
-                            onClick={() => {
-                                setTab(key);
-                                setError("");
-                                setNotice("");
-                                if (key === "categories") setCategoryError("");
-                            }}
-                        >
-                            <span className="production-tab-icon" aria-hidden="true">
-                                {TAB_ICONS[key]}
-                            </span>
-                            <span>{label}</span>
-                        </button>
-                    ))}
-                </nav>
+                {isMenuView && (
+                    <nav className="production-tabs" aria-label="Menu management">
+                        {tabs.map(([key, label]) => (
+                            <button
+                                key={key}
+                                type="button"
+                                className={
+                                    tab === key ? "production-tab active" : "production-tab"
+                                }
+                                aria-selected={tab === key}
+                                role="tab"
+                                onClick={() => {
+                                    setTab(key);
+                                    setError("");
+                                    setNotice("");
+                                    if (key === "categories") setCategoryError("");
+                                }}
+                            >
+                                <span className="production-tab-icon" aria-hidden="true">
+                                    {TAB_ICONS[key]}
+                                </span>
+                                <span>{label}</span>
+                            </button>
+                        ))}
+                    </nav>
+                )}
 
                 {loading ? (
                     <div className="production-empty">
@@ -1317,8 +1326,7 @@ export function ProductionManagementPage({
                                             placeholder="Name or description"
                                         />
                                     </label>
-                                    <TextField
-                                        select
+                                    <AppSelect
                                         size="small"
                                         label="Status"
                                         value={categoryStatus}
@@ -1330,11 +1338,12 @@ export function ProductionManagementPage({
                                             setCategoryLoading(true);
                                             setCategoryError("");
                                         }}
-                                    >
-                                        <MuiMenuItem value="all">All categories</MuiMenuItem>
-                                        <MuiMenuItem value="active">Active</MuiMenuItem>
-                                        <MuiMenuItem value="inactive">Inactive</MuiMenuItem>
-                                    </TextField>
+                                        options={[
+                                            { value: "all", label: "All categories" },
+                                            { value: "active", label: "Active" },
+                                            { value: "inactive", label: "Inactive" },
+                                        ]}
+                                    />
                                     <AppButton
                                         className="menu-category-search-button"
                                         variant="contained"
@@ -1526,18 +1535,20 @@ export function ProductionManagementPage({
                         )}
 
                         {tab === "recipes" && (
-                            <section className="production-panel">
-                                <div className="production-panel-heading">
-                                    <div>
+                            <section className="production-panel recipes-library">
+                                <div className="production-panel-heading recipes-library-header">
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "flex-start" }} >
+                                        <span className="recipes-section-kicker">
+                                            <Sparkles size={14} /> YOUR KITCHEN, ORGANIZED
+                                        </span>
                                         <h2>Recipe library</h2>
                                         <p>
-                                            Connect each menu dish to measured stock ingredients,
-                                            batch yields, and preparation steps.
+                                            Every dish, ingredient, and batch detail in one place.
                                         </p>
                                     </div>
                                     {canManage && (
                                         <button
-                                            className="production-button"
+                                            className="production-button recipes-create-button"
                                             onClick={startNewRecipe}
                                             disabled={
                                                 activeMenuItems.length === 0 ||
@@ -1556,34 +1567,46 @@ export function ProductionManagementPage({
                                     )}
                                 </div>
                                 <div className="recipe-overview-grid">
-                                    <article className="recipe-overview-card">
-                                        <span>Active recipes</span>
-                                        <strong>{recipes.filter((recipe) => !recipe.isArchived).length}</strong>
-                                        <small>Available for production</small>
+                                    <article className="recipe-overview-card recipes-stat-card">
+                                        <span className="recipes-stat-icon"><ChefHat size={18} /></span>
+                                        <div>
+                                            <span>Active recipes</span>
+                                            <strong>{recipes.filter((recipe) => !recipe.isArchived).length}</strong>
+                                            <small>Available for production</small>
+                                        </div>
                                     </article>
-                                    <article className="recipe-overview-card">
-                                        <span>Menu items</span>
-                                        <strong>{activeMenuItems.length}</strong>
-                                        <small>Active dishes to connect</small>
+                                    <article className="recipe-overview-card recipes-stat-card">
+                                        <span className="recipes-stat-icon"><Utensils size={18} /></span>
+                                        <div>
+                                            <span>Menu items</span>
+                                            <strong>{activeMenuItems.length}</strong>
+                                            <small>Active dishes to connect</small>
+                                        </div>
                                     </article>
-                                    <article className="recipe-overview-card">
-                                        <span>Stock ingredients</span>
-                                        <strong>{activeStockItems.length}</strong>
-                                        <small>Active items available to use</small>
+                                    <article className="recipe-overview-card recipes-stat-card">
+                                        <span className="recipes-stat-icon"><Package size={18} /></span>
+                                        <div>
+                                            <span>Stock ingredients</span>
+                                            <strong>{activeStockItems.length}</strong>
+                                            <small>Active items available to use</small>
+                                        </div>
                                     </article>
-                                    <article className="recipe-overview-card">
-                                        <span>Archived recipes</span>
-                                        <strong>{recipes.filter((recipe) => recipe.isArchived).length}</strong>
-                                        <small>Previous recipes kept on file</small>
+                                    <article className="recipe-overview-card recipes-stat-card">
+                                        <span className="recipes-stat-icon"><Archive size={18} /></span>
+                                        <div>
+                                            <span>Archived recipes</span>
+                                            <strong>{recipes.filter((recipe) => recipe.isArchived).length}</strong>
+                                            <small>Previous recipes kept on file</small>
+                                        </div>
                                     </article>
                                 </div>
                                 {(activeMenuItems.length === 0 || activeStockItems.length === 0) && (
-                                    <div className="recipe-prerequisite-alert" role="status">
+                                    <div className="recipe-prerequisite-alert recipes-prerequisite-alert" role="status">
+                                        <span className="recipes-prerequisite-icon"><ChefHat size={20} /></span>
                                         <div>
                                             <strong>Set up your recipe inputs first</strong>
                                             <p>
-                                                A recipe needs an active menu item and at least one active
-                                                stock ingredient.
+                                                Add an active menu item and stock ingredient to start creating recipes.
                                             </p>
                                         </div>
                                         {activeMenuItems.length === 0 && (
@@ -1603,57 +1626,69 @@ export function ProductionManagementPage({
                                         )}
                                     </div>
                                 )}
-                                <div className="recipe-toolbar">
+                                <div className="recipe-toolbar recipes-toolbar">
                                     <label className="recipe-search-field">
-                                        Search recipes
-                                        <input
-                                            type="search"
-                                            value={recipeSearch}
-                                            onChange={(event) => setRecipeSearch(event.target.value)}
-                                            placeholder="Recipe, menu item, or stock ingredient"
-                                        />
+                                        <span>Search recipes</span>
+                                        <span className="recipes-search-input">
+                                            <Search size={17} aria-hidden="true" />
+                                            <input
+                                                type="search"
+                                                value={recipeSearch}
+                                                onChange={(event) => setRecipeSearch(event.target.value)}
+                                                placeholder="Recipe, dish, or ingredient"
+                                            />
+                                        </span>
                                     </label>
                                     <label className="recipe-filter-field">
                                         Status
-                                        <select
+                                        <AppSelect
                                             value={recipeStatusFilter}
                                             onChange={(event) =>
                                                 setRecipeStatusFilter(
                                                     event.target.value as "all" | "active" | "archived",
                                                 )
                                             }
-                                        >
-                                            <option value="all">All recipes</option>
-                                            <option value="active">Active</option>
-                                            <option value="archived">Archived</option>
-                                        </select>
+                                            options={[
+                                                { value: "all", label: "All recipes" },
+                                                { value: "active", label: "Active" },
+                                                { value: "archived", label: "Archived" },
+                                            ]}
+                                        />
                                     </label>
+                                    <span className="recipes-result-count">
+                                        {visibleRecipes.length} {visibleRecipes.length === 1 ? "recipe" : "recipes"}
+                                    </span>
                                 </div>
                                 {showRecipeForm && (
                                     <Dialog
                                         open
                                         fullWidth
                                         maxWidth="lg"
-                                        className="sfh-form-dialog"
+                                        className="sfh-form-dialog recipes-form-dialog"
                                         onClose={closeRecipeForm}
                                         aria-labelledby="recipe-form-title"
                                         aria-describedby="recipe-form-description"
                                     >
                                         <form
-                                            className="production-form production-dialog-form sfh-dialog-form"
+                                            className="production-form production-dialog-form sfh-dialog-form recipes-form"
                                             onSubmit={submitRecipe}
                                         >
-                                            <div className="production-form-title">
-                                                <div>
-                                                    <h3 id="recipe-form-title">
-                                                        {editingRecipe
-                                                            ? `New version for ${editingRecipe.name}`
-                                                            : "Recipe setup"}
-                                                    </h3>
-                                                    <p id="recipe-form-description">
-                                                        Map each ingredient to an active stock item and its
-                                                        matching unit.
-                                                    </p>
+                                            <div className="production-form-title recipes-form-title">
+                                                <div className="recipes-form-title-content">
+                                                    <span className="recipes-form-title-icon"><ChefHat size={22} /></span>
+                                                    <div className="recipes-form-title-copy">
+                                                        <span className="recipes-form-kicker">
+                                                            {editingRecipe ? "RECIPE VERSION" : "NEW RECIPE"}
+                                                        </span>
+                                                        <h3 id="recipe-form-title">
+                                                            {editingRecipe
+                                                                ? `Update ${editingRecipe.name}`
+                                                                : "Create a recipe"}
+                                                        </h3>
+                                                        <p id="recipe-form-description">
+                                                            Define the batch, map your ingredients, and add the steps.
+                                                        </p>
+                                                    </div>
                                                 </div>
                                                 <button
                                                     type="button"
@@ -1664,10 +1699,10 @@ export function ProductionManagementPage({
                                                     <Icon name="close" size={18} />
                                                 </button>
                                             </div>
-                                            <div className="recipe-flow-steps production-span-two">
-                                                <span className="is-current"><b>1</b> Link menu item</span>
-                                                <span><b>2</b> Set batch yield</span>
-                                                <span><b>3</b> Map stock ingredients</span>
+                                            <div className="recipe-flow-steps recipes-setup-steps production-span-two" style={{ marginTop: '20px' }}>
+                                                <span className="is-current"><b>01</b> Dish &amp; batch</span>
+                                                <span><b>02</b> Ingredients</span>
+                                                <span><b>03</b> Preparation</span>
                                             </div>
                                             {error && (
                                                 <AutoDismissMessage
@@ -1684,10 +1719,18 @@ export function ProductionManagementPage({
                                             )}
                                             {!editingRecipe && (
                                                 <>
+                                                    <div className="recipes-form-section-heading production-span-two">
+                                                        <span>01</span>
+                                                        <div>
+                                                            <h4>Choose your dish</h4>
+                                                            <p>Link this recipe to an active menu item.</p>
+                                                        </div>
+                                                    </div>
                                                     <label>
                                                         Menu item
-                                                        <select
+                                                        <AppSelect
                                                             value={recipeMenuItemId}
+                                                            displayEmpty
                                                             onChange={(event) => {
                                                                 const menuItem = activeMenuItems.find(
                                                                     (item) => item.id === event.target.value,
@@ -1696,14 +1739,14 @@ export function ProductionManagementPage({
                                                                 setRecipeName(menuItem?.name || "");
                                                             }}
                                                             required
-                                                        >
-                                                            <option value="">Select a menu item</option>
-                                                            {activeMenuItems.map((item) => (
-                                                                <option key={item.id} value={item.id}>
-                                                                    {item.name} · {item.category}
-                                                                </option>
-                                                            ))}
-                                                        </select>
+                                                            options={[
+                                                                { value: "", label: "Select the menu item" },
+                                                                ...activeMenuItems.map((item) => ({
+                                                                    value: item.id,
+                                                                    label: `${item.name} · ${item.category}`,
+                                                                })),
+                                                            ]}
+                                                        />
                                                     </label>
                                                     <label>
                                                         Recipe name
@@ -1744,6 +1787,13 @@ export function ProductionManagementPage({
                                                     )}
                                                 </>
                                             )}
+                                            <div className="recipes-form-section-heading production-span-two">
+                                                <span>{editingRecipe ? "01" : "02"}</span>
+                                                <div>
+                                                    <h4>Batch and yield</h4>
+                                                    <p>Set the quantity and expected servings for one batch.</p>
+                                                </div>
+                                            </div>
                                             <label>
                                                 Base batch quantity
                                                 <input
@@ -1759,14 +1809,14 @@ export function ProductionManagementPage({
                                             </label>
                                             <label>
                                                 Batch unit{" "}
-                                                <select
+                                                <AppSelect
                                                     value={baseUnit}
                                                     onChange={(event) => setBaseUnit(event.target.value)}
-                                                >
-                                                    {UNIT_OPTIONS.map((unit) => (
-                                                        <option key={unit}>{unit}</option>
-                                                    ))}
-                                                </select>
+                                                    options={UNIT_OPTIONS.map((unit) => ({
+                                                        value: unit,
+                                                        label: unit,
+                                                    }))}
+                                                />
                                             </label>
                                             <label>
                                                 Expected plates
@@ -1806,8 +1856,14 @@ export function ProductionManagementPage({
                                                     }
                                                 />
                                             </label>
-                                            <label className="production-span-two">
-                                                Preparation instructions
+                                            <label className="production-span-two recipes-instructions-label">
+                                                <span className="recipes-form-section-heading-inline">
+                                                    <span>{editingRecipe ? "02" : "03"}</span>
+                                                    <span>
+                                                        <strong>Preparation instructions</strong>
+                                                        <small>Add a clear step-by-step method for your kitchen team.</small>
+                                                    </span>
+                                                </span>
                                                 <textarea
                                                     value={instructions}
                                                     onChange={(event) =>
@@ -1819,26 +1875,30 @@ export function ProductionManagementPage({
                                                     maxLength={10000}
                                                 />
                                             </label>
-                                            <div className="production-ingredient-editor production-span-two">
-                                                <div className="production-subheading">
+                                            <div className="production-ingredient-editor recipes-ingredient-section production-span-two">
+                                                <div className="production-subheading recipes-ingredient-heading">
                                                     <div>
-                                                        <h4>Stock ingredients</h4>
-                                                        <p>
-                                                            Select inventory items and enter the amount used
-                                                            for one batch.
-                                                        </p>
+                                                        <span className="recipes-form-section-number">
+                                                            {editingRecipe ? "03" : "04"}
+                                                        </span>
+                                                        <div>
+                                                            <h4>Stock ingredients</h4>
+                                                            <p>
+                                                                Choose inventory items and set the quantity used in one batch.
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                     <button
                                                         type="button"
-                                                        className="production-text-button"
+                                                        className="production-text-button recipes-add-ingredient"
                                                         onClick={() =>
                                                             setIngredients((rows) => [
-                                                                ...rows,
                                                                 emptyIngredient(),
+                                                                ...rows,
                                                             ])
                                                         }
                                                     >
-                                                        + Add ingredient
+                                                        <Icon name="add" size={15} /> Add ingredient
                                                     </button>
                                                 </div>
                                                 {ingredients.map((ingredient, index) => {
@@ -1853,169 +1913,173 @@ export function ProductionManagementPage({
                                                     );
                                                     return (
                                                         <div
-                                                            className="production-ingredient-row"
+                                                            className="production-ingredient-row recipes-ingredient-row"
                                                             key={`ingredient-${index}`}
                                                         >
-                                                        <label>
-                                                            Stock item
-                                                            <select
-                                                                value={ingredient.stockItemId}
-                                                                required
-                                                                onChange={(event) => {
-                                                                    const selected = activeStockItems.find(
-                                                                        (item) => item.id === event.target.value,
-                                                                    );
-                                                                    setIngredients((rows) =>
-                                                                        rows.map((row, rowIndex) =>
-                                                                            rowIndex === index
-                                                                                ? {
-                                                                                    ...row,
-                                                                                    stockItemId: event.target.value,
-                                                                                    unit: selected?.unit || "",
-                                                                                }
-                                                                                : row,
-                                                                        ),
-                                                                    );
-                                                                }}
-                                                            >
-                                                                <option value="">Select stock item</option>
-                                                                {activeStockItems.map((item) => (
-                                                                    <option key={item.id} value={item.id}>
-                                                                        {item.name} · {quantityText(item.quantity, item.unit)} available
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                            {selectedStockItem && (
-                                                                <small className="recipe-stock-hint">
-                                                                    Available{" "}
-                                                                    <strong>
+                                                            <label>
+                                                                Stock item
+                                                                <AppSelect
+                                                                    value={ingredient.stockItemId}
+                                                                    required
+                                                                    displayEmpty
+                                                                    onChange={(event) => {
+                                                                        const selected = activeStockItems.find(
+                                                                            (item) => item.id === event.target.value,
+                                                                        );
+                                                                        setIngredients((rows) =>
+                                                                            rows.map((row, rowIndex) =>
+                                                                                rowIndex === index
+                                                                                    ? {
+                                                                                        ...row,
+                                                                                        stockItemId: event.target.value,
+                                                                                        unit: selected?.unit || "",
+                                                                                    }
+                                                                                    : row,
+                                                                            ),
+                                                                        );
+                                                                    }}
+                                                                    options={[
+                                                                        { value: "", label: "Select stock item" },
+                                                                        ...activeStockItems.map((item) => ({
+                                                                            value: item.id,
+                                                                            label: `${item.name} · ${quantityText(item.quantity, item.unit)} available`,
+                                                                        })),
+                                                                    ]}
+                                                                />
+                                                                {selectedStockItem && (
+                                                                    <small className="recipe-stock-hint">
+                                                                        Available{" "}
+                                                                        <strong>
+                                                                            {quantityText(
+                                                                                selectedStockItem.quantity,
+                                                                                selectedStockItem.unit,
+                                                                            )}
+                                                                        </strong>{" "}
+                                                                        · Reorder at{" "}
                                                                         {quantityText(
-                                                                            selectedStockItem.quantity,
+                                                                            selectedStockItem.reorderLevel,
                                                                             selectedStockItem.unit,
                                                                         )}
-                                                                    </strong>{" "}
-                                                                    · Reorder at{" "}
-                                                                    {quantityText(
-                                                                        selectedStockItem.reorderLevel,
-                                                                        selectedStockItem.unit,
-                                                                    )}
-                                                                    {asNumber(selectedStockItem.quantity) <=
-                                                                        asNumber(selectedStockItem.reorderLevel) && (
-                                                                            <span className="recipe-stock-low">
-                                                                                Low stock
-                                                                            </span>
-                                                                        )}
-                                                                </small>
-                                                            )}
-                                                        </label>
-                                                        <label>
-                                                            Quantity
-                                                            <input
-                                                                type="number"
-                                                                min="0.001"
-                                                                step="0.001"
-                                                                value={ingredient.quantity}
-                                                                required
-                                                                onChange={(event) =>
-                                                                    setIngredients((rows) =>
-                                                                        rows.map((row, rowIndex) =>
-                                                                            rowIndex === index
-                                                                                ? {
-                                                                                    ...row,
-                                                                                    quantity: event.target.value,
-                                                                                }
-                                                                                : row,
-                                                                        ),
-                                                                    )
-                                                                }
-                                                            />
-                                                        </label>
-                                                        <label>
-                                                            Recipe unit
-                                                            <select
-                                                                value={ingredient.unit}
-                                                                required
-                                                                onChange={(event) =>
-                                                                    setIngredients((rows) =>
-                                                                        rows.map((row, rowIndex) =>
-                                                                            rowIndex === index
-                                                                                ? { ...row, unit: event.target.value }
-                                                                                : row,
-                                                                        ),
-                                                                    )
-                                                                }
-                                                            >
-                                                                <option value="">Select unit</option>
-                                                                {unitOptions.map((unit) => (
-                                                                    <option key={unit}>{unit}</option>
-                                                                ))}
-                                                            </select>
-                                                        </label>
-                                                        <label>
-                                                            Wastage %
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                max="100"
-                                                                step="0.01"
-                                                                value={ingredient.wastagePercentage}
-                                                                onChange={(event) =>
-                                                                    setIngredients((rows) =>
-                                                                        rows.map((row, rowIndex) =>
-                                                                            rowIndex === index
-                                                                                ? {
-                                                                                    ...row,
-                                                                                    wastagePercentage:
-                                                                                        event.target.value,
-                                                                                }
-                                                                                : row,
-                                                                        ),
-                                                                    )
-                                                                }
-                                                            />
-                                                        </label>
-                                                        <label className="production-span-two">
-                                                            Preparation note
-                                                            <input
-                                                                value={ingredient.preparationNotes}
-                                                                maxLength={255}
-                                                                onChange={(event) =>
-                                                                    setIngredients((rows) =>
-                                                                        rows.map((row, rowIndex) =>
-                                                                            rowIndex === index
-                                                                                ? {
-                                                                                    ...row,
-                                                                                    preparationNotes:
-                                                                                        capitalizeFirstLetter(
+                                                                        {asNumber(selectedStockItem.quantity) <=
+                                                                            asNumber(selectedStockItem.reorderLevel) && (
+                                                                                <span className="recipe-stock-low">
+                                                                                    Low stock
+                                                                                </span>
+                                                                            )}
+                                                                    </small>
+                                                                )}
+                                                            </label>
+                                                            <label>
+                                                                Quantity
+                                                                <input
+                                                                    type="number"
+                                                                    min="0.001"
+                                                                    step="0.001"
+                                                                    value={ingredient.quantity}
+                                                                    required
+                                                                    onChange={(event) =>
+                                                                        setIngredients((rows) =>
+                                                                            rows.map((row, rowIndex) =>
+                                                                                rowIndex === index
+                                                                                    ? {
+                                                                                        ...row,
+                                                                                        quantity: event.target.value,
+                                                                                    }
+                                                                                    : row,
+                                                                            ),
+                                                                        )
+                                                                    }
+                                                                />
+                                                            </label>
+                                                            <label>
+                                                                Recipe unit
+                                                                <AppSelect
+                                                                    value={ingredient.unit}
+                                                                    required
+                                                                    displayEmpty
+                                                                    onChange={(event) =>
+                                                                        setIngredients((rows) =>
+                                                                            rows.map((row, rowIndex) =>
+                                                                                rowIndex === index
+                                                                                    ? { ...row, unit: event.target.value }
+                                                                                    : row,
+                                                                            ),
+                                                                        )
+                                                                    }
+                                                                    options={[
+                                                                        { value: "", label: "Select unit" },
+                                                                        ...unitOptions.map((unit) => ({
+                                                                            value: unit,
+                                                                            label: unit,
+                                                                        })),
+                                                                    ]}
+                                                                />
+                                                            </label>
+                                                            <label>
+                                                                Wastage %
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    max="100"
+                                                                    step="0.01"
+                                                                    value={ingredient.wastagePercentage}
+                                                                    onChange={(event) =>
+                                                                        setIngredients((rows) =>
+                                                                            rows.map((row, rowIndex) =>
+                                                                                rowIndex === index
+                                                                                    ? {
+                                                                                        ...row,
+                                                                                        wastagePercentage:
                                                                                             event.target.value,
-                                                                                        ),
-                                                                                }
-                                                                                : row,
-                                                                        ),
-                                                                    )
-                                                                }
-                                                            />
-                                                        </label>
-                                                        {ingredients.length > 1 && (
-                                                            <button
-                                                                type="button"
-                                                                className="production-text-button production-remove"
-                                                                onClick={() =>
-                                                                    setIngredients((rows) =>
-                                                                        rows.filter(
-                                                                            (_, rowIndex) => rowIndex !== index,
-                                                                        ),
-                                                                    )
-                                                                }
-                                                            >
-                                                                Remove
-                                                            </button>
-                                                        )}
+                                                                                    }
+                                                                                    : row,
+                                                                            ),
+                                                                        )
+                                                                    }
+                                                                />
+                                                            </label>
+                                                            <label className="production-span-two">
+                                                                Preparation note
+                                                                <input
+                                                                    value={ingredient.preparationNotes}
+                                                                    maxLength={255}
+                                                                    onChange={(event) =>
+                                                                        setIngredients((rows) =>
+                                                                            rows.map((row, rowIndex) =>
+                                                                                rowIndex === index
+                                                                                    ? {
+                                                                                        ...row,
+                                                                                        preparationNotes:
+                                                                                            capitalizeFirstLetter(
+                                                                                                event.target.value,
+                                                                                            ),
+                                                                                    }
+                                                                                    : row,
+                                                                            ),
+                                                                        )
+                                                                    }
+                                                                />
+                                                            </label>
+                                                            {ingredients.length > 1 && (
+                                                                <button
+                                                                    type="button"
+                                                                    className="production-text-button production-remove recipes-remove-ingredient"
+                                                                    onClick={() =>
+                                                                        setIngredients((rows) =>
+                                                                            rows.filter(
+                                                                                (_, rowIndex) => rowIndex !== index,
+                                                                            ),
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Remove
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}
                                             </div>
-                                            <div className="production-form-actions production-span-two">
+                                            <div className="production-form-actions recipes-form-actions production-span-two">
                                                 <button className="production-button" disabled={saving}>
                                                     {saving
                                                         ? "Saving…"
@@ -2037,117 +2101,117 @@ export function ProductionManagementPage({
                                 <div className="production-recipe-grid">
                                     {visibleRecipes.map((recipe) => (
                                         <article
-                                            className={`production-recipe-card${recipe.isArchived ? " is-archived" : ""}`}
+                                            className={`production-recipe-card recipes-card${recipe.isArchived ? " is-archived" : ""}`}
                                             key={recipe.id}
                                         >
-                                            <div className="production-recipe-card-top">
-                                                <span className="production-recipe-mark">R</span>
+                                            <div className="recipes-card-cover">
+                                                {recipe.menuItem?.imageUrl ? (
+                                                    <img
+                                                        src={recipe.menuItem.imageUrl}
+                                                        alt=""
+                                                        onError={(event) => {
+                                                            event.currentTarget.hidden = true;
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="recipes-card-cover-placeholder">
+                                                        <ChefHat size={34} />
+                                                    </div>
+                                                )}
                                                 <span
-                                                    className={`production-status ${recipe.isArchived ? "status-inactive" : "status-active"}`}
+                                                    className={`production-status recipes-card-status ${recipe.isArchived ? "status-inactive" : "status-active"}`}
                                                 >
                                                     {recipe.isArchived
                                                         ? "Archived"
                                                         : `Version ${recipe.currentVersion}`}
                                                 </span>
+                                                <div className="recipes-card-cover-caption">
+                                                    <span>{recipe.menuItem?.category || "Menu recipe"}</span>
+                                                    <h3>{recipe.name}</h3>
+                                                    <small>
+                                                        <Utensils size={13} />
+                                                        {recipe.menuItem?.name || "Menu item unavailable"}
+                                                    </small>
+                                                </div>
                                             </div>
-                                            <h3>{recipe.name}</h3>
-                                            <div className="recipe-card-menu-link">
-                                                <span>MENU ITEM</span>
-                                                <strong>
-                                                {recipe.menuItem?.name || "Menu item unavailable"}
-                                                </strong>
-                                                <small>
-                                                    {recipe.menuItem?.itemCode || "No item code"}
-                                                    {recipe.menuItem?.category
-                                                        ? ` · ${recipe.menuItem.category}`
-                                                        : ""}
-                                                </small>
-                                            </div>
-                                            {recipe.current && (
-                                                <div className="production-recipe-meta">
-                                                    <span>
-                                                        Batch{" "}
-                                                        {quantityText(
-                                                            recipe.current.baseProductionQuantity,
-                                                            recipe.current.baseProductionUnit,
-                                                        )}
-                                                    </span>
-                                                    <span>
-                                                        {quantityText(
-                                                            recipe.current.expectedPlateCount,
-                                                            "plates",
-                                                        )}
-                                                    </span>
-                                                    <span>
-                                                        {recipe.current.ingredients?.length || 0}{" "}
-                                                        ingredients
-                                                    </span>
-                                                    {recipe.current.cookingTimeMinutes !== null && (
+                                            <div className="recipes-card-content">
+                                                {recipe.current && (
+                                                    <div className="recipes-card-metrics">
                                                         <span>
-                                                            {recipe.current.cookingTimeMinutes} min cook
+                                                            <Package size={14} />
+                                                            {quantityText(
+                                                                recipe.current.baseProductionQuantity,
+                                                                recipe.current.baseProductionUnit,
+                                                            )}
                                                         </span>
+                                                        <span>
+                                                            <Utensils size={14} />
+                                                            {quantityText(
+                                                                recipe.current.expectedPlateCount,
+                                                                "plates",
+                                                            )}
+                                                        </span>
+                                                        <span>
+                                                            <Leaf size={14} />
+                                                            {recipe.current.ingredients?.length || 0} ingredients
+                                                        </span>
+                                                        {recipe.current.cookingTimeMinutes !== null && (
+                                                            <span>
+                                                                <Clock3 size={14} />
+                                                                {recipe.current.cookingTimeMinutes} min
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                <div className="production-card-actions recipes-card-actions">
+                                                    <AppTooltip title={`View ${recipe.name}`}>
+                                                        <button
+                                                            type="button"
+                                                            className="recipes-icon-action"
+                                                            aria-label={`View ${recipe.name}`}
+                                                            onClick={() => setSelectedRecipe(recipe)}
+                                                        >
+                                                            <Icon name="view" size={14} />
+                                                        </button>
+                                                    </AppTooltip>
+                                                    {canManage && !recipe.isArchived && (
+                                                        <AppTooltip title={`Edit ${recipe.name}`}>
+                                                            <button
+                                                                type="button"
+                                                                className="recipes-icon-action"
+                                                                aria-label={`Edit ${recipe.name}`}
+                                                                onClick={() => startNewVersion(recipe)}
+                                                                disabled={!recipe.current}
+                                                            >
+                                                                <Icon name="edit" size={14} />
+                                                            </button>
+                                                        </AppTooltip>
+                                                    )}
+                                                    {canManage && (
+                                                        <AppTooltip title={`${recipe.isArchived ? "Restore" : "Archive"} ${recipe.name}`}>
+                                                            <button
+                                                                type="button"
+                                                                className={`recipes-icon-action${recipe.isArchived ? "" : " recipes-icon-action-archive"}`}
+                                                                aria-label={`${recipe.isArchived ? "Restore" : "Archive"} ${recipe.name}`}
+                                                                onClick={() => void toggleRecipe(recipe)}
+                                                                disabled={saving}
+                                                            >
+                                                                <Icon
+                                                                    name={
+                                                                        recipe.isArchived ? "activate" : "deactivate"
+                                                                    }
+                                                                    size={14}
+                                                                />
+                                                            </button>
+                                                        </AppTooltip>
                                                     )}
                                                 </div>
-                                            )}
-                                            {!!recipe.current?.ingredients.length && (
-                                                <div className="recipe-card-ingredients">
-                                                    <span>STOCK MAPPED</span>
-                                                    {recipe.current.ingredients.slice(0, 3).map((ingredient) => {
-                                                        const stockItem = stockItems.find(
-                                                            (item) => item.id === ingredient.stockItemId,
-                                                        );
-                                                        return (
-                                                            <small key={ingredient.stockItemId}>
-                                                                <b>{stockItem?.name || "Stock item unavailable"}</b>
-                                                                {" · "}
-                                                                {quantityText(ingredient.quantity, ingredient.unit)}
-                                                            </small>
-                                                        );
-                                                    })}
-                                                    {recipe.current.ingredients.length > 3 && (
-                                                        <small>
-                                                            +{recipe.current.ingredients.length - 3} more
-                                                        </small>
-                                                    )}
-                                                </div>
-                                            )}
-                                            <div className="production-card-actions">
-                                                <button
-                                                    className="production-text-button"
-                                                    onClick={() => setSelectedRecipe(recipe)}
-                                                >
-                                                    <Icon name="view" size={14} /> View recipe
-                                                </button>
-                                                {canManage && !recipe.isArchived && (
-                                                    <button
-                                                        className="production-text-button"
-                                                        onClick={() => startNewVersion(recipe)}
-                                                        disabled={!recipe.current}
-                                                    >
-                                                        <Icon name="edit" size={14} /> Edit recipe
-                                                    </button>
-                                                )}
-                                                {canManage && (
-                                                    <button
-                                                        className="production-text-button"
-                                                        onClick={() => void toggleRecipe(recipe)}
-                                                        disabled={saving}
-                                                    >
-                                                        <Icon
-                                                            name={
-                                                                recipe.isArchived ? "activate" : "deactivate"
-                                                            }
-                                                            size={14}
-                                                        />{" "}
-                                                        {recipe.isArchived ? "Restore" : "Archive"}
-                                                    </button>
-                                                )}
                                             </div>
                                         </article>
                                     ))}
                                 </div>
                                 {visibleRecipes.length === 0 && !showRecipeForm && (
-                                    <div className="recipe-empty-state">
+                                    <div className="recipe-empty-state recipes-empty-state">
                                         {recipes.length === 0 ? (
                                             <>
                                                 <span className="recipe-empty-mark">R</span>
@@ -2194,21 +2258,26 @@ export function ProductionManagementPage({
                 <Dialog
                     open
                     fullWidth
-                    maxWidth="md"
-                    className="production-detail-dialog"
+                    maxWidth="lg"
+                    className="production-detail-dialog recipes-detail-dialog"
                     onClose={() => setSelectedRecipe(null)}
                     aria-labelledby="recipe-detail-title"
                 >
-                    <section className="production-recipe-detail">
-                        <div className="production-modal-heading">
-                            <div>
+                    <section className="production-recipe-detail recipes-detail">
+                        <div className="production-modal-heading recipes-detail-heading">
+                            <div className="recipes-detail-title">
                                 <p className="eyebrow">
-                                    RECIPE · VERSION {selectedRecipe.currentVersion}
+                                    <Sparkles size={13} /> RECIPE DETAILS
                                 </p>
                                 <h2 id="recipe-detail-title">{selectedRecipe.name}</h2>
                                 <p className="production-recipe-menu">
                                     For {selectedRecipe.menuItem?.name || "Menu item unavailable"}
                                 </p>
+                                <span className={`recipes-detail-version${selectedRecipe.isArchived ? " is-archived" : ""}`}>
+                                    {selectedRecipe.isArchived ? "Archived" : "Active"}
+                                    <span>·</span>
+                                    Version {selectedRecipe.currentVersion}
+                                </span>
                             </div>
                             <button
                                 type="button"
@@ -2220,7 +2289,7 @@ export function ProductionManagementPage({
                             </button>
                         </div>
                         {selectedRecipe.menuItem && (
-                            <div className="recipe-detail-menu-card">
+                            <div className="recipe-detail-menu-card recipes-detail-dish">
                                 {selectedRecipe.menuItem.imageUrl ? (
                                     <img
                                         src={selectedRecipe.menuItem.imageUrl}
@@ -2243,7 +2312,8 @@ export function ProductionManagementPage({
                                     </small>
                                 </div>
                                 <div className="recipe-detail-menu-aside">
-                                    <span>
+                                    <span className={selectedRecipe.menuItem.isVegetarian ? "recipes-diet-badge is-vegetarian" : "recipes-diet-badge"}>
+                                        {selectedRecipe.menuItem.isVegetarian && <Leaf size={13} />}
                                         {selectedRecipe.menuItem.isVegetarian
                                             ? "Vegetarian"
                                             : "Non-vegetarian"}
@@ -2254,9 +2324,9 @@ export function ProductionManagementPage({
                         )}
                         {selectedRecipe.current ? (
                             <>
-                                <div className="recipe-detail-stats">
+                                <div className="recipe-detail-stats recipes-detail-stats">
                                     <div>
-                                        <span>Batch size</span>
+                                        <span><Package size={15} /> Batch size</span>
                                         <strong>
                                             {quantityText(
                                                 selectedRecipe.current.baseProductionQuantity,
@@ -2265,7 +2335,7 @@ export function ProductionManagementPage({
                                         </strong>
                                     </div>
                                     <div>
-                                        <span>Expected yield</span>
+                                        <span><Utensils size={15} /> Expected yield</span>
                                         <strong>
                                             {quantityText(
                                                 selectedRecipe.current.expectedPlateCount,
@@ -2274,7 +2344,7 @@ export function ProductionManagementPage({
                                         </strong>
                                     </div>
                                     <div>
-                                        <span>Cooking time</span>
+                                        <span><Clock3 size={15} /> Cooking time</span>
                                         <strong>
                                             {selectedRecipe.current.cookingTimeMinutes === null
                                                 ? "Not set"
@@ -2282,7 +2352,7 @@ export function ProductionManagementPage({
                                         </strong>
                                     </div>
                                     <div>
-                                        <span>Recipe wastage</span>
+                                        <span><Leaf size={15} /> Recipe wastage</span>
                                         <strong>
                                             {quantityText(
                                                 selectedRecipe.current.wastagePercentage,
@@ -2291,10 +2361,11 @@ export function ProductionManagementPage({
                                         </strong>
                                     </div>
                                 </div>
-                                <section className="recipe-detail-section">
-                                    <div className="recipe-detail-section-heading">
+                                <section className="recipe-detail-section recipes-detail-section">
+                                    <div className="recipe-detail-section-heading recipes-detail-section-heading">
                                         <div>
-                                            <h3>Stock ingredients</h3>
+                                            <span className="recipes-detail-section-label">IN THIS RECIPE</span>
+                                            <h3>Ingredients</h3>
                                             <p>
                                                 {selectedRecipe.current.ingredients.length} ingredients
                                                 linked to inventory
@@ -2314,10 +2385,10 @@ export function ProductionManagementPage({
                                                     stockItem !== undefined &&
                                                     availableQuantity !== null &&
                                                     availableQuantity <=
-                                                        asNumber(stockItem.reorderLevel);
+                                                    asNumber(stockItem.reorderLevel);
                                                 return (
                                                     <article
-                                                        className="recipe-detail-ingredient"
+                                                        className="recipe-detail-ingredient recipes-detail-ingredient"
                                                         key={`${ingredient.stockItemId}-${index}`}
                                                     >
                                                         <div className="recipe-detail-ingredient-main">
@@ -2361,8 +2432,9 @@ export function ProductionManagementPage({
                                     </div>
                                 </section>
                                 {selectedRecipe.current.preparationInstructions && (
-                                    <section className="recipe-detail-section">
-                                        <h3>Preparation instructions</h3>
+                                    <section className="recipe-detail-section recipes-detail-section recipes-instructions-section">
+                                        <span className="recipes-detail-section-label">THE METHOD</span>
+                                        <h3>Preparation</h3>
                                         <p className="recipe-detail-instructions">
                                             {selectedRecipe.current.preparationInstructions}
                                         </p>
@@ -2374,7 +2446,7 @@ export function ProductionManagementPage({
                                 No current version is available for this recipe.
                             </div>
                         )}
-                        <div className="recipe-detail-actions">
+                        <div className="recipe-detail-actions recipes-detail-actions">
                             {canManage &&
                                 !selectedRecipe.isArchived &&
                                 selectedRecipe.current && (
